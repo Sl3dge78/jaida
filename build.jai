@@ -7,7 +7,7 @@ build :: () {
     w := Compiler.compiler_create_workspace("Zelda");
     
     options := Compiler.get_build_options();
-    options.output_executable_name = "Zelda";
+    options.output_executable_name = "out";
     options.output_path = "bin";
     options.intermediate_path = "tmp";
     options.output_type = .EXECUTABLE;

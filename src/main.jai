@@ -3,13 +3,39 @@ Window_Creation :: #import "Window_Creation";
 Simp :: #import "Simp";
 Input :: #import "Input";
 Math :: #import "Math";
+X11 :: #import "X11";
 using Math;
 #import "GL";
 
+PRINT_SCANCODES :: true;
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;
 ZOOM :: 2;
 PLAYER_SPEED :: 100.0;
+
+// @Release : remember to remove the print in Input/x11.jai !!
+Scan_Code :: enum u32 {
+    W :: 25;
+    A :: 38;
+    S :: 39;
+    D :: 40;
+    KEY_1 :: 10;
+    KEY_2 :: 11;
+    KEY_3 :: 12;
+    KEY_4 :: 13;
+    KEY_5 :: 14;
+    KEY_6 :: 15;
+    KEY_7 :: 16;
+    KEY_8 :: 17;
+    KEY_9 :: 18;
+    KEY_10 :: 19;
+}
+
+// @Speed : We can build an array at startup of translations Scan_Code -> Key_Codes
+get_keycode_from_scancode :: (scancode: Scan_Code) -> Input.Key_Code {
+    keysym := X11.XkbKeycodeToKeysym(X11.x_global_display, xx scancode, 0, 0);
+    return Input.get_key_code(keysym);
+}
 
 Game_State :: struct {
     player_pos : Vector2 = .{16,16};
@@ -68,8 +94,8 @@ main :: () {
     // Load 
     game_state : Game_State;
     load_texture(*game_state.player_texture, "res/SpriteSheet.png");
+    Basic.print("Hello!\n");
     
-
     quit := false;
     last_time := Basic.get_time();
     while !quit {
@@ -90,19 +116,18 @@ main :: () {
         for Input.events_this_frame {
             if it.type == .QUIT then quit = true;
         }
-        // @ToDo : Find a way to make this use scancodes instead of letters
-        // to be able to work on all keyboards
+
         player_vel : Vector2;
-        if Input.input_button_states[#char "Z"] == .DOWN {
+        if Input.input_button_states[get_keycode_from_scancode(.W)] == .DOWN {
             player_vel.y += 1;
         }        
-        if Input.input_button_states[#char "S"] == .DOWN {
+        if Input.input_button_states[get_keycode_from_scancode(.S)] == .DOWN {
             player_vel.y -= 1;
         } 
-        if Input.input_button_states[#char "Q"] == .DOWN {
+        if Input.input_button_states[get_keycode_from_scancode(.A)] == .DOWN {
             player_vel.x -= 1;
         }
-        if Input.input_button_states[#char "D"] == .DOWN {
+        if Input.input_button_states[get_keycode_from_scancode(.D)] == .DOWN {
             player_vel.x += 1;
         } 
         game_state.player_pos += Math.unit_vector(player_vel) * (delta_time * PLAYER_SPEED);

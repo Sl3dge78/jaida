@@ -1,15 +1,12 @@
 Basic :: #import "Basic";
-Window_Creation :: #import "Window_Creation";
-Simp :: #import "Simp";
-Input :: #import "Input";
 Math :: #import "Math";
-X11 :: #import "X11";
+using Math; // To import operator overloading
+
 File :: #import "File";
 #import "GL";
+#import "SDL";
 
-#load "input.jai";
-
-using Math;
+Renderer :: #import "Renderer";
 
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;
@@ -17,8 +14,9 @@ ZOOM :: 2;
 PLAYER_SPEED :: 100.0;
 MAP_WIDTH :: 40;
 MAP_HEIGHT :: 22;
+MAP_LAYERS :: 3;
 
-Map :: [MAP_WIDTH*MAP_HEIGHT]u32;
+Map :: [MAP_LAYERS][MAP_WIDTH*MAP_HEIGHT]u32;
 
 Game_State :: struct {
     State :: enum {
@@ -26,12 +24,12 @@ Game_State :: struct {
         EDITOR;
     }
     state : State = .GAME;
-    screen_width : u16;
-    screen_height : u16;
+    screen_width : s32;
+    screen_height : s32;
     player_pos : Vector2 = .{16,16};
-    player_texture : Simp.Texture;
+    player_texture : Texture;
     map : Map;
-    map_texture : Simp.Texture;
+    map_texture : Texture;
     camera_position : Vector2 = .{0, 8};
 }
 
@@ -40,6 +38,7 @@ Game_Editor :: struct {
     offset_x : s32 = 0;
     offset_y : s32 = -42;
     selected_tile : u32 = 0;
+    current_layer := 0;
     zoom := 2.0;
 }
 
@@ -98,29 +97,25 @@ immediate_tile :: (pos : Vector2, uv0: Vector2, uv1 : Vector2, cam : Vector2) {
                         uv0 = uv0, uv1 = uvx , uv2 = uv1, uv3 = uvy);
 }
 
-load_texture :: (texture : *Simp.Texture, path : string) {
-    success := Simp.texture_load_from_file(texture, path);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    if !success {
-        Basic.log_error("Unable to load %", path);
-        Basic.assert(success);
-    }
-}
 
 main :: () {
+    // Init
     Basic.init_time();
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    defer SDL_Quit();
 
-    window := Window_Creation.create_window(1280, 720, "Zelda");
-    Simp.set_render_target(window);
+    window := SDL_CreateWindow("Zelda", 1280, 720, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0);
+    defer SDL_DestroyWindow(window);
+
+    Renderer.init(window);
+    defer Renderer.deinit();
 
     // Load 
     game_state : Game_State;
-    w, h := Simp.get_render_dimensions(window);
-    game_state.screen_width = xx w;
-    game_state.screen_height = xx h;
-    load_texture(*game_state.player_texture, "res/SpriteSheet.png");
-    load_texture(*game_state.map_texture, "res/world.png");
+    w, h : s32 = ---;
+    SDL_GetWindowSize(window, *game_state.screen_width, *game_state.screen_height);
+    Renderer.load_texture(*game_state.player_texture, "res/SpriteSheet.png");
+    Renderer.load_texture(*game_state.map_texture, "res/world.png");
     load_map(game_state.map);
 
     // Editor
@@ -133,43 +128,91 @@ main :: () {
         delta_time : float = cast(float) (now - last_time);
         last_time = now;
 
-        Input.update_window_events();
-        for Input.get_window_resizes() {
-            Simp.update_window(it.window);
-            if it.window == window {
-                game_state.screen_width = xx it.width;
-                game_state.screen_height = xx it.height;
-            }
-        }
+        mouse_x, mouse_y: s32 = ---;
+        SDL_GetMouseState(*mouse_x, *mouse_y);
+        keyboard := SDL_GetKeyboardState(null);
+        event : SDL_Event = ---;
+        while SDL_PollEvent(*event) {
+            if event.type == {
+                case SDL_QUIT;
+                    quit = true;
+                case SDL_WINDOWEVENT; 
+                    if event.window.event == {
+                        case SDL_WINDOWEVENT_RESIZED; 
+                            Simp.update_window(os_window);
+                            SDL_GetWindowSize(window, *game_state.screen_width, *game_state.screen_height);
 
-        mouse_x, mouse_y := Window_Creation.get_mouse_pointer_position(window, false);
-        mouse_y = game_state.screen_height - mouse_y;
-        for Input.events_this_frame {
-            if it.type == .QUIT then quit = true;
-            if it.type == .KEYBOARD {
-                if it.key_code == .F1 && it.key_pressed {
-                    game_state.state = ifx game_state.state == .GAME then Game_State.State.EDITOR else .GAME;
-                    if game_state.state == .GAME {
-                        Basic.log("Editor off");
-                    } else {
-                        Basic.log("Editor on");
-                    }
+                            
+                    };
+                case SDL_KEYUP;
+                    if event.key.keysym.scancode == {
+                        case SDL_SCANCODE_F1; {
+                            game_state.state = ifx game_state.state == .GAME then Game_State.State.EDITOR else .GAME;
+                            if game_state.state == .GAME {
+                                Basic.log("Editor off");
+                            } else {
+                                Basic.log("Editor on");
+                            }
+                        }
+                        case SDL_SCANCODE_F5; 
+                            save_map(game_state.map);
+                        case SDL_SCANCODE_F9; 
+                            load_map(game_state.map);
+                        case SDL_SCANCODE_1;
+                            editor.current_layer = 0;
+                            Basic.log("Changed layer %", editor.current_layer);
+                        case SDL_SCANCODE_2;
+                            editor.current_layer = 1;
+                            Basic.log("Changed layer %", editor.current_layer);
+                        case SDL_SCANCODE_3;
+                            editor.current_layer = 2;
+                            Basic.log("Changed layer %", editor.current_layer);
+
+
+                    };
+
+            };
+            if game_state.state == .EDITOR {
+
+                if event.type == {
+                    case SDL_MOUSEBUTTONUP;
+                        if event.button.button == SDL_BUTTON_LEFT {
+                            if editor.show_map {
+                                if mouse_x < game_state.screen_width / 2 { // Clicking on the map
+                                    tile_x := mouse_x / TILE_SIZE / editor.zoom - editor.offset_x;
+                                    tile_y :=  mouse_y / TILE_SIZE / editor.zoom - editor.offset_y;
+                                    editor.selected_tile = xy_to_tile_id(*game_state.map_texture, xx tile_x, xx tile_y);
+                                }
+                            }
+                        }
+                    case SDL_MOUSEBUTTONDOWN;
+                        if !editor.show_map || mouse_x > game_state.screen_width / 2 {
+                            x,y := get_tile_from_pixel(mouse_x, mouse_y);
+                            if x < MAP_WIDTH && y < MAP_HEIGHT && x >= 0 && y >= 0 {
+                                game_state.map[editor.current_layer][x + y * MAP_WIDTH] = editor.selected_tile;
+                            }
+                        }
+                    case SDL_KEYUP; 
+                        if event.key.keysym.scancode == SDL_SCANCODE_TAB {
+                            editor.show_map = !editor.show_map;
+                        }
                 }
             }
         }
 
+
         if game_state.state == .GAME {
             player_vel : Vector2;
-            if Input.input_button_states[get_keycode_from_scancode(.W)] == .DOWN {
+            if keyboard[SDL_SCANCODE_W] {
                 player_vel.y += 1;
             }        
-            if Input.input_button_states[get_keycode_from_scancode(.S)] == .DOWN {
+            if keyboard[SDL_SCANCODE_S] {
                 player_vel.y -= 1;
             } 
-            if Input.input_button_states[get_keycode_from_scancode(.A)] == .DOWN {
+            if keyboard[SDL_SCANCODE_A] {
                 player_vel.x -= 1;
             }
-            if Input.input_button_states[get_keycode_from_scancode(.D)] == .DOWN {
+            if keyboard[SDL_SCANCODE_D] {
                 player_vel.x += 1;
             } 
             game_state.player_pos += Math.unit_vector(player_vel) * (delta_time * PLAYER_SPEED);
@@ -177,58 +220,30 @@ main :: () {
         
         if game_state.state == .EDITOR {
             
-            if Input.input_button_states[get_keycode_from_scancode(.W)] == .DOWN {
+            if keyboard[SDL_SCANCODE_W] {
                 editor.offset_y += 1;
                 if (editor.offset_y > 0) editor.offset_y = 0; 
             }        
-            if Input.input_button_states[get_keycode_from_scancode(.S)] == .DOWN {
+            if keyboard[SDL_SCANCODE_S] {
                 editor.offset_y -= 1;
                 if (editor.offset_y < -42) editor.offset_y = -42; // @Hardcoded, can't be bothered to do the math
             } 
-            if Input.input_button_states[get_keycode_from_scancode(.A)] == .DOWN {
+            if keyboard[SDL_SCANCODE_A] {
                 editor.offset_x -= 1;
                 if (editor.offset_x < -43) editor.offset_x = -43; // @Hardcoded, can't be bothered to do the math
             }
-            if Input.input_button_states[get_keycode_from_scancode(.D)] == .DOWN {
+            if keyboard[SDL_SCANCODE_D] {
                 editor.offset_x += 1;
                 if (editor.offset_x > 0) editor.offset_x = 0;
             } 
 
-            if Input.input_button_states[Input.Key_Code.F5] == .END {
-                save_map(game_state.map);
-                Basic.log("Map saved!");
-            }
-
-            if Input.input_button_states[Input.Key_Code.F9] == .END {
-                load_map(game_state.map);
-                Basic.log("Map loaded!");
-            }
-
-            if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_LEFT] == .END {
-                if editor.show_map {
-                    if mouse_x < game_state.screen_width / 2{ // Clicking on the map
-                        tile_x := mouse_x / TILE_SIZE / editor.zoom - editor.offset_x;
-                        tile_y :=  mouse_y / TILE_SIZE / editor.zoom - editor.offset_y;
-                        editor.selected_tile = xy_to_tile_id(*game_state.map_texture, xx tile_x, xx tile_y);
-                    }
-                }
-            }
-
-            if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_LEFT] == .DOWN {
-                if !editor.show_map || mouse_x > game_state.screen_width / 2 {
-                    x,y := get_tile_from_pixel(mouse_x, mouse_y);
-                    if x < MAP_WIDTH && y < MAP_HEIGHT && x >= 0 && y >= 0 {
-                        game_state.map[x + y * MAP_WIDTH] = editor.selected_tile;
-                    }
-                }
-
-            }
-            if Input.input_button_states[Input.Key_Code.TAB] == .END {
-                editor.show_map = !editor.show_map;
-            }
         }
 
-        Simp.clear_render_target(0, 0, 0, 1);
+        if game_state.state == .GAME {
+            Simp.clear_render_target(0, 0, 0, 1);
+        } else {
+            Simp.clear_render_target(0.5, 0, 0, 1);
+        }
         draw_map(*game_state.map_texture, game_state.map, game_state.camera_position);
         
         Simp.set_shader_for_images(*game_state.player_texture);
@@ -242,15 +257,16 @@ main :: () {
 
         }
 
-        Simp.swap_buffers(window);
+        Simp.swap_buffers(os_window);
         Basic.reset_temporary_storage();
     }
 }
 
-draw_map :: (texture : *Simp.Texture, map : Map, cam : Vector2) {
-    Simp.set_shader_for_images(texture);
+draw_map :: (texture : *Renderer.Texture, map : Map, cam : Vector2) {
+    Renderer.set_shader_for_images(texture);
     y := 0;
-    for map {
+    for layer : map {
+        for layer {
         x := it_index % MAP_WIDTH;
         y := it_index / MAP_WIDTH;
         x0 := xy(xx (x * TILE_SIZE * ZOOM) + cam.x, xx (y * TILE_SIZE * ZOOM) + cam.y); 
@@ -268,13 +284,15 @@ draw_map :: (texture : *Simp.Texture, map : Map, cam : Vector2) {
             p2 = x1, p3 = xy(x0.x, x1.y),
             uv0 = uv0, uv1 = uvx,
             uv2 = uv1, uv3 = uvy);
+        }
     }
 }
 
 save_map :: (map : Map) {
-    if !File.write_entire_file("map.bin", map.data, MAP_WIDTH * MAP_HEIGHT * size_of(type_of(map[0]))){
+    if !File.write_entire_file("map.bin", map.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(map[0][0]))){
         Basic.log_error("Unable to save map!");
     }
+    Basic.log("Saved!");
 }
 
 load_map :: (map : Map) {
@@ -284,8 +302,8 @@ load_map :: (map : Map) {
         return;
     }
     defer File.file_close(*map_file);
-    File.file_read(*map_file, map.data, MAP_WIDTH * MAP_HEIGHT * size_of(type_of(map[0])));
-    Basic.log("Map loaded");
+    File.file_read(*map_file, map.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(map[0][0])));
+    Basic.log("Loaded!");
 }
 
 draw_editor_map :: (editor : *Game_Editor, game_state : *Game_State) {
@@ -293,21 +311,22 @@ draw_editor_map :: (editor : *Game_Editor, game_state : *Game_State) {
     half_sw := screen_width / 2.0;
     zoom := editor.zoom;
 
-    Simp.set_scissor(0, 0, screen_width / 2, screen_height);
+    
+    set_scissor(0, 0, screen_width / 2, screen_height);
     // Draw the background 
-    Simp.set_shader_for_color();
-    Simp.immediate_quad(0, 0, map_texture.width * zoom, map_texture.height * zoom, .{.70, 0.20, 0.70, 1.0});
+    set_shader_for_color();
+    immediate_quad(0, 0, map_texture.width * zoom, map_texture.height * zoom, .{.70, 0.20, 0.70, 1.0});
         
     // Draw the texture
-    Simp.set_shader_for_images(*map_texture);
+    set_shader_for_images(*map_texture);
     x0 := xx (editor.offset_x * TILE_SIZE + 0) * zoom;
     x1 := xx (editor.offset_x * TILE_SIZE + map_texture.width) * zoom;
     y0 := xx (editor.offset_y * TILE_SIZE + 0) * zoom;
     y1 := xx (editor.offset_y * TILE_SIZE + map_texture.height) * zoom;
-    Simp.immediate_quad(x0, y0, x1, y1, .{1,1,1,1}); 
+    immediate_quad(x0, y0, x1, y1, .{1,1,1,1}); 
 
     // Highlight selected tile
-    Simp.set_shader_for_color(true);
+    set_shader_for_color(true);
     tile_x, tile_y := tile_id_to_xy(*map_texture, editor.selected_tile);
 
     Simp.immediate_quad(

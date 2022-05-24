@@ -21,6 +21,11 @@ build :: () {
         is_lsp = true;
     }
 
+    import_path : [..] string = ---;
+    Basic.array_add(*import_path, ..options.import_path);
+    Basic.array_add(*import_path, "modules");
+    options.import_path = import_path;
+
     Compiler.set_build_options(options, w);
     Compiler.compiler_begin_intercept(w);
     Compiler.add_build_file("src/main.jai", w);

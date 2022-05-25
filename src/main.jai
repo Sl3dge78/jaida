@@ -27,9 +27,9 @@ Game_State :: struct {
     screen_width : s32;
     screen_height : s32;
     player_pos : Vector2 = .{16,16};
-    player_texture : Texture;
+    player_texture : Renderer.Texture;
     map : Map;
-    map_texture : Texture;
+    map_texture : Renderer.Texture;
     camera_position : Vector2 = .{0, 8};
 }
 
@@ -46,7 +46,7 @@ from_index_to_vector2 :: inline (index : int, width : int) -> x : int, y : int {
     return x = index % width, y = index / width;
 }
 
-get_uv_from_texture :: (texture : *Simp.Texture, tile_x : int, tile_y : int) -> uv0 : Vector2, uv1 : Vector2 {
+get_uv_from_texture :: (texture : *Renderer.Texture, tile_x : int, tile_y : int) -> uv0 : Vector2, uv1 : Vector2 {
     nb_tiles_width := texture.width / TILE_SIZE;
     nb_tiles_height := texture.height / TILE_SIZE;
 
@@ -55,7 +55,7 @@ get_uv_from_texture :: (texture : *Simp.Texture, tile_x : int, tile_y : int) -> 
     return uv0, uv1;
 }
 
-get_uv_from_texture :: (texture : *Simp.Texture, tile : u32) -> uv0 : Vector2, uv1 : Vector2 {
+get_uv_from_texture :: (texture : *Renderer.Texture, tile : u32) -> uv0 : Vector2, uv1 : Vector2 {
     nb_tiles_width : u32 = cast(u32)(texture.width) / TILE_SIZE;
     nb_tiles_height : u32 = cast(u32)(texture.height) / TILE_SIZE;
     tile_x, tile_y := tile_id_to_xy(texture, tile);
@@ -65,12 +65,12 @@ get_uv_from_texture :: (texture : *Simp.Texture, tile : u32) -> uv0 : Vector2, u
     return uv0, uv1;
 }
 
-xy_to_tile_id :: inline (texture : *Simp.Texture, x : u32, y : u32) -> tile_id : u32 {
+xy_to_tile_id :: inline (texture : *Renderer.Texture, x : u32, y : u32) -> tile_id : u32 {
     nb_tiles_width := texture.width / TILE_SIZE;
     return xx x + y * xx nb_tiles_width;
 }
 
-tile_id_to_xy :: inline (texture : *Simp.Texture, tile_id : u32) -> x : u32 , y : u32 {
+tile_id_to_xy :: inline (texture : *Renderer.Texture, tile_id : u32) -> x : u32 , y : u32 {
     nb_tiles_width : u32 = cast(u32)texture.width / TILE_SIZE;
     tile_x := tile_id % nb_tiles_width;
     tile_y := tile_id / nb_tiles_width;
@@ -81,30 +81,17 @@ get_tile_from_pixel :: inline (x : int, y : int) -> x: int, y: int {
     return x / (TILE_SIZE * ZOOM), y / (TILE_SIZE * ZOOM);
 }
 
-immediate_tile :: (pos : Vector2, uv0: Vector2, uv1 : Vector2, cam : Vector2) {
-    p0 := (pos * cast(float) ZOOM) + cam; p0.x -= TILE_HALF * ZOOM; p0.y -= TILE_HALF * ZOOM;
-    p1 := (pos * cast(float) ZOOM) + cam; p1.x += TILE_HALF * ZOOM; p1.y -= TILE_HALF * ZOOM;
-    p2 := (pos * cast(float) ZOOM) + cam; p2.x += TILE_HALF * ZOOM; p2.y += TILE_HALF * ZOOM;
-    p3 := (pos * cast(float) ZOOM) + cam; p3.x -= TILE_HALF * ZOOM; p3.y += TILE_HALF * ZOOM;
-
-    uvx := uv0;
-    uvx.x = uv1.x;
-
-    uvy := uv0;
-    uvy.y = uv1.y;
-
-    Simp.immediate_quad(p0  = p0,  p1  = p1,  p2  = p2,  p3  = p3,
-                        uv0 = uv0, uv1 = uvx , uv2 = uv1, uv3 = uvy);
-}
-
-
 main :: () {
     // Init
     Basic.init_time();
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    SDL_Init(SDL_INIT_EVERYTHING);
     defer SDL_Quit();
 
-    window := SDL_CreateWindow("Zelda", 1280, 720, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 0);
+    window := SDL_CreateWindow("Zelda", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_OPENGL);
+    if !window {
+        Basic.log("%", Basic.to_string(SDL_GetError()));
+        return;
+    }
     defer SDL_DestroyWindow(window);
 
     Renderer.init(window);
@@ -114,7 +101,7 @@ main :: () {
     game_state : Game_State;
     w, h : s32 = ---;
     SDL_GetWindowSize(window, *game_state.screen_width, *game_state.screen_height);
-    Renderer.load_texture(*game_state.player_texture, "res/SpriteSheet.png");
+    Renderer.load_texture(*game_state.player_texture, "res/blue_samurai.png");
     Renderer.load_texture(*game_state.map_texture, "res/world.png");
     load_map(game_state.map);
 
@@ -139,10 +126,7 @@ main :: () {
                 case SDL_WINDOWEVENT; 
                     if event.window.event == {
                         case SDL_WINDOWEVENT_RESIZED; 
-                            Simp.update_window(os_window);
-                            SDL_GetWindowSize(window, *game_state.screen_width, *game_state.screen_height);
-
-                            
+                            Renderer.update_window(window);
                     };
                 case SDL_KEYUP;
                     if event.key.keysym.scancode == {
@@ -240,24 +224,24 @@ main :: () {
         }
 
         if game_state.state == .GAME {
-            Simp.clear_render_target(0, 0, 0, 1);
+            Renderer.clear_render_target(0, 0, 0, 1);
         } else {
-            Simp.clear_render_target(0.5, 0, 0, 1);
+            Renderer.clear_render_target(0.5, 0, 0, 1);
         }
-        draw_map(*game_state.map_texture, game_state.map, game_state.camera_position);
+        //draw_map(*game_state.map_texture, game_state.map, game_state.camera_position);
         
-        Simp.set_shader_for_images(*game_state.player_texture);
-        Simp.immediate_begin();
-
+        // Player
+        Renderer.set_shader_for_images(*game_state.player_texture);
+        p0 := (game_state.player_pos * cast(float) ZOOM) + game_state.camera_position; p0.x -= TILE_HALF * ZOOM; p0.y -= TILE_HALF * ZOOM;
+        p1 := (game_state.player_pos * cast(float) ZOOM) + game_state.camera_position; p1.x += TILE_HALF * ZOOM; p1.y += TILE_HALF * ZOOM;
         uv0, uv1 := get_uv_from_texture(*game_state.player_texture, 0, 6);
-        immediate_tile(game_state.player_pos, uv0, uv1, game_state.camera_position);
+        Renderer.immediate_quad(x0 = p0.x, y0 = p0.y, x1 = p1.x, y1 = p1.y, uv0 = uv0, uv1 = uv1);
 
         if game_state.state == .EDITOR {
             if editor.show_map draw_editor_map(*editor, *game_state);
-
         }
 
-        Simp.swap_buffers(os_window);
+        Renderer.swap_buffers(window);
         Basic.reset_temporary_storage();
     }
 }
@@ -279,11 +263,10 @@ draw_map :: (texture : *Renderer.Texture, map : Map, cam : Vector2) {
         uvy := uv0;
         uvy.y = uv1.y;
             
-        Simp.immediate_quad(
-            p0 = x0, p1 = xy(x1.x, x0.y), 
-            p2 = x1, p3 = xy(x0.x, x1.y),
-            uv0 = uv0, uv1 = uvx,
-            uv2 = uv1, uv3 = uvy);
+        Renderer.immediate_quad(
+            x0 = x0.x, y0 = x0.y, 
+            x1 = x1.x, y1 = x1.y,
+            uv0 = uv0, uv1 = uv1);
         }
     }
 }
@@ -312,30 +295,30 @@ draw_editor_map :: (editor : *Game_Editor, game_state : *Game_State) {
     zoom := editor.zoom;
 
     
-    set_scissor(0, 0, screen_width / 2, screen_height);
+    Renderer.set_scissor(0, 0, screen_width / 2, screen_height);
     // Draw the background 
-    set_shader_for_color();
-    immediate_quad(0, 0, map_texture.width * zoom, map_texture.height * zoom, .{.70, 0.20, 0.70, 1.0});
+    Renderer.set_shader_for_color();
+    Renderer.immediate_quad(0, 0, map_texture.width * zoom, map_texture.height * zoom, .{.70, 0.20, 0.70, 1.0});
         
     // Draw the texture
-    set_shader_for_images(*map_texture);
+    Renderer.set_shader_for_images(*map_texture);
     x0 := xx (editor.offset_x * TILE_SIZE + 0) * zoom;
     x1 := xx (editor.offset_x * TILE_SIZE + map_texture.width) * zoom;
     y0 := xx (editor.offset_y * TILE_SIZE + 0) * zoom;
     y1 := xx (editor.offset_y * TILE_SIZE + map_texture.height) * zoom;
-    immediate_quad(x0, y0, x1, y1, .{1,1,1,1}); 
+    Renderer.immediate_quad(x0, y0, x1, y1, .{1,1,1,1}); 
 
     // Highlight selected tile
-    set_shader_for_color(true);
+    Renderer.set_shader_for_color();
     tile_x, tile_y := tile_id_to_xy(*map_texture, editor.selected_tile);
 
-    Simp.immediate_quad(
+    Renderer.immediate_quad(
         x0 + tile_x * TILE_SIZE * zoom, 
         y0 + tile_y * TILE_SIZE * zoom, 
         x0 + (tile_x + 1) * TILE_SIZE * zoom, 
         y0 + (tile_y + 1) * TILE_SIZE * zoom, 
         .{1,1,0,.5});
 
-    Simp.clear_scissor();
+    Renderer.clear_scissor();
 
 }

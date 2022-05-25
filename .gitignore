@@ -1,4 +1,6 @@
-bin/
+bin/*
+!bin/res
 tmp/
 .build/
 .vscode/
+*.rdbg

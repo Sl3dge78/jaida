@@ -47,6 +47,9 @@ init :: (window : *SDL_Window) {
     gl_load(*gl);
     gl_enable_debug_output(break_on_error = true);
 
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+
     glGenVertexArrays(1, *immediate_vao);
     glGenBuffers(1, *immediate_vbo);
     context.renderer_state = New(Immediate_State);
@@ -126,18 +129,19 @@ swap_buffers :: (window : *SDL_Window) {
 }
 
 set_shader :: (shader : *Shader) {
-    if context.renderer_state.current_shader && (context.renderer_state.current_shader != shader) {
-        immediate_flush();
+    if context.renderer_state.current_shader != shader {
+        if context.renderer_state.current_shader then immediate_flush();
+        glUseProgram(shader.gl_program);
+        context.renderer_state.current_shader = shader;
+
+        m := orthographic_projection_matrix(0, cast(float) context.renderer_state.width, 0, cast(float) context.renderer_state.height, -1.0, 1.0);
+        glUniformMatrix4fv(glGetUniformLocation(shader.gl_program, "projection"), 1, GL_TRUE, *m._11);
     }
-    glUseProgram(shader.gl_program);
-    context.renderer_state.current_shader = shader;
-    
-    m := orthographic_projection_matrix(0, cast(float) context.renderer_state.width, 0, cast(float) context.renderer_state.height, -1.0, 1.0);
-    glUniformMatrix4fv(glGetUniformLocation(shader.gl_program, "projection"), 1, GL_TRUE, *m._11);
 }
 
 set_shader_for_images :: (texture : *Texture) {
     set_shader(*texture_shader);
+    immediate_flush();
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture.gl_handle);
     loc := glGetUniformLocation(context.renderer_state.current_shader.gl_program, "diffuse_texture");
@@ -281,7 +285,6 @@ load_shader :: (code : string) -> GLuint {
     }
 
     return program;
-
 }
 
 color_shader_code :: #string __GLSL 

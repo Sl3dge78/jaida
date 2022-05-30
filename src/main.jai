@@ -116,7 +116,8 @@ main :: () {
         last_time = now;
 
         mouse_x, mouse_y: s32 = ---;
-        SDL_GetMouseState(*mouse_x, *mouse_y);
+        mouse_state := SDL_GetMouseState(*mouse_x, *mouse_y);
+        mouse_y = game_state.screen_height - mouse_y;
         keyboard := SDL_GetKeyboardState(null);
         event : SDL_Event = ---;
         while SDL_PollEvent(*event) {
@@ -157,23 +158,15 @@ main :: () {
 
             };
             if game_state.state == .EDITOR {
-
                 if event.type == {
                     case SDL_MOUSEBUTTONUP;
                         if event.button.button == SDL_BUTTON_LEFT {
                             if editor.show_map {
                                 if mouse_x < game_state.screen_width / 2 { // Clicking on the map
                                     tile_x := mouse_x / TILE_SIZE / editor.zoom - editor.offset_x;
-                                    tile_y :=  mouse_y / TILE_SIZE / editor.zoom - editor.offset_y;
+                                    tile_y := mouse_y / TILE_SIZE / editor.zoom - editor.offset_y;
                                     editor.selected_tile = xy_to_tile_id(*game_state.map_texture, xx tile_x, xx tile_y);
                                 }
-                            }
-                        }
-                    case SDL_MOUSEBUTTONDOWN;
-                        if !editor.show_map || mouse_x > game_state.screen_width / 2 {
-                            x,y := get_tile_from_pixel(mouse_x, mouse_y);
-                            if x < MAP_WIDTH && y < MAP_HEIGHT && x >= 0 && y >= 0 {
-                                game_state.map[editor.current_layer][x + y * MAP_WIDTH] = editor.selected_tile;
                             }
                         }
                     case SDL_KEYUP; 
@@ -183,7 +176,6 @@ main :: () {
                 }
             }
         }
-
 
         if game_state.state == .GAME {
             player_vel : Vector2;
@@ -203,6 +195,14 @@ main :: () {
         }
         
         if game_state.state == .EDITOR {
+            if mouse_state & SDL_BUTTON(1) {
+                if !editor.show_map || mouse_x > game_state.screen_width / 2 {
+                    x, y := get_tile_from_pixel(mouse_x, mouse_y);
+                    if x < MAP_WIDTH && y < MAP_HEIGHT && x >= 0 && y >= 0 {
+                        game_state.map[editor.current_layer][x + y * MAP_WIDTH] = editor.selected_tile;
+                    }
+                }
+            }
             
             if keyboard[SDL_SCANCODE_W] {
                 editor.offset_y += 1;
@@ -228,7 +228,7 @@ main :: () {
         } else {
             Renderer.clear_render_target(0.5, 0, 0, 1);
         }
-        //draw_map(*game_state.map_texture, game_state.map, game_state.camera_position);
+        draw_map(*game_state.map_texture, game_state.map, game_state.camera_position);
         
         // Player
         Renderer.set_shader_for_images(*game_state.player_texture);
@@ -250,23 +250,18 @@ draw_map :: (texture : *Renderer.Texture, map : Map, cam : Vector2) {
     Renderer.set_shader_for_images(texture);
     y := 0;
     for layer : map {
-        for layer {
-        x := it_index % MAP_WIDTH;
-        y := it_index / MAP_WIDTH;
-        x0 := xy(xx (x * TILE_SIZE * ZOOM) + cam.x, xx (y * TILE_SIZE * ZOOM) + cam.y); 
-        x1 := xy(x0.x + TILE_SIZE * ZOOM, x0.y + TILE_SIZE * ZOOM);
+        for map[0] {
+            x := it_index % MAP_WIDTH;
+            y := it_index / MAP_WIDTH;
+            x0 := xy(xx (x * TILE_SIZE * ZOOM) + cam.x, xx (y * TILE_SIZE * ZOOM) + cam.y); 
+            x1 := xy(x0.x + TILE_SIZE * ZOOM, x0.y + TILE_SIZE * ZOOM);
 
-        uv0, uv1 := get_uv_from_texture(texture, it); 
-        uvx := uv0;
-        uvx.x = uv1.x;
+            uv0, uv1 := get_uv_from_texture(texture, it); 
 
-        uvy := uv0;
-        uvy.y = uv1.y;
-            
-        Renderer.immediate_quad(
-            x0 = x0.x, y0 = x0.y, 
-            x1 = x1.x, y1 = x1.y,
-            uv0 = uv0, uv1 = uv1);
+            Renderer.immediate_quad(
+                x0 = x0.x, y0 = x0.y, 
+                x1 = x1.x, y1 = x1.y,
+                uv0 = uv0, uv1 = uv1);
         }
     }
 }
@@ -320,5 +315,4 @@ draw_editor_map :: (editor : *Game_Editor, game_state : *Game_State) {
         .{1,1,0,.5});
 
     Renderer.clear_scissor();
-
 }

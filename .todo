@@ -1,0 +1,23 @@
+
+# In-Progress 
+- [ ] Animations
+
+# Inbox 
+
+## System
+- [ ] Multiple maps
+- [ ] Combat
+- [ ] Enemies
+    - [ ] Follow AI
+- [ ] NPC
+    - [ ] Walks random
+    - [ ] Dialogs
+- [ ] Puzzles (push blocks?)
+
+## Content
+- [ ] Dungeon 
+    - [ ] Puzzles
+
+
+# Enhancements
+    - [ ] (Collision) Allow definition of a custom collision box, for some tiles.

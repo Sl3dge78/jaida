@@ -31,5 +31,5 @@ pressed_this_frame :: inline (scancode : SDL_Scancode) -> bool {
 }
 
 get_mouse_button :: inline (button : int) -> bool {
-    return (mouse_state & SDL_BUTTON(button)) == 1;
+    return (mouse_state & SDL_BUTTON(button)) != 0;
 }

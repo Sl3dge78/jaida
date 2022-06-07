@@ -23,12 +23,21 @@ Game_State :: struct {
     State :: enum {
         GAME;
         EDITOR;
-    }
+    };
+
+    Direction :: enum u8 {
+        SOUTH :: 0;
+        NORTH :: 1;
+        WEST :: 2;
+        EAST :: 3;
+    };
     state : State = .GAME;
     screen_width : s32;
     screen_height : s32;
     player_pos : Vector2 = .{0,0};
     player_texture : Renderer.Texture;
+    player_direction : Direction;
+    player_anim_time : float32;
     map : Map;
     map_texture : Renderer.Texture;
     camera_position : Vector2 = .{0.5, 0.75};
@@ -205,17 +214,27 @@ main :: () {
             player_vel : Vector2;
             if Input.get_keyboard(SDL_SCANCODE_W) {
                 player_vel.y += 1;
+                context.game_state.player_direction = .NORTH;
             }        
-            if Input.get_keyboard(SDL_SCANCODE_S) {
-                player_vel.y -= 1;
-            } 
             if Input.get_keyboard(SDL_SCANCODE_A) {
                 player_vel.x -= 1;
+                context.game_state.player_direction = .WEST;
             }
+            if Input.get_keyboard(SDL_SCANCODE_S) {
+                player_vel.y -= 1;
+                context.game_state.player_direction = .SOUTH;
+            } 
             if Input.get_keyboard(SDL_SCANCODE_D) {
                 player_vel.x += 1;
+                context.game_state.player_direction = .EAST;
             } 
             final_vel := Math.unit_vector(player_vel) * (delta_time * PLAYER_SPEED);
+            if length(final_vel) > 0 {
+                context.game_state.player_anim_time += delta_time;
+            } else {
+                context.game_state.player_anim_time = 0.0;
+            }
+            if context.game_state.player_anim_time > 1.0 then context.game_state.player_anim_time = 0.0;
             
             context.game_state.player_pos = move_and_slide(context.game_state.player_pos, final_vel, context.game_state.map);
         }
@@ -239,7 +258,8 @@ main :: () {
         Renderer.set_shader_for_images(*context.game_state.player_texture);
         x0, y0 := world_to_screen(context.game_state.camera_position, context.game_state.player_pos + Vector2.{-0.5, -0.5});
         x1, y1 := world_to_screen(context.game_state.camera_position, context.game_state.player_pos + Vector2.{+0.5, +0.5});
-        uv0, uv1 := get_uv_from_texture(*context.game_state.player_texture, 0, 6);
+        y : int = xx (context.game_state.player_anim_time * 4);
+        uv0, uv1 := get_uv_from_texture(*context.game_state.player_texture, xx context.game_state.player_direction, 6 - y);
         Renderer.immediate_quad(x0 = xx x0, y0 = xx y0, x1 = xx x1, y1 = xx y1, uv0 = uv0, uv1 = uv1);
 
         Map.draw_layer(2, context.game_state.map, *context.game_state.map_texture, context.game_state.camera_position);

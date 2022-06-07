@@ -32,30 +32,43 @@ Map :: struct {
         }
     }
 
-    save :: (using map : Map) {
-        if !File.write_entire_file("map.bin", tiles.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(tiles[0][0]))){
+    // Allocates a temporary string
+    get_map_file_name :: (world_pos : Vector2) -> string {
+        pos_fmt := Basic.tprint("res/maps/%_%.map", cast(int)world_pos.x, cast(int)world_pos.y);
+        return pos_fmt;
+    }
+
+    save :: (using map : Map, world_pos : Vector2) {
+        if !File.write_entire_file(get_map_file_name(world_pos), tiles.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(tiles[0][0]))){
             Basic.log_error("Unable to save map!");
         }
         Basic.log("Saved!");
     }
 
-    load :: (using map : Map) {
-        map_file, success := File.file_open("map.bin");
+    load :: (using map : Map, world_pos : Vector2) {
+        map_file, success := File.file_open(get_map_file_name(world_pos));
         if !success {
             Basic.log_error("Unable to open map file!");
             return;
         }
         defer File.file_close(*map_file);
         File.file_read(*map_file, tiles.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(tiles[0][0])));
-        Basic.log("Loaded!");
+        Basic.log("Loaded map at %.", world_pos);
+    }
+
+    // @Speed : This is kind of dumb
+    exists :: (world_pos : Vector2) -> bool {
+        map_file, success := File.file_open(get_map_file_name(world_pos));
+        if success then File.file_close(*map_file);
+        return success;
     }
 
     // @Debug : Bounds check?
     get_collision_at :: (using map : Map, pos : Vector2) -> u32 {
         x : int = xx round(pos.x);
-        if x < 0 || x > MAP_WIDTH  then return 1;
+        if x < 0 || x >= MAP_WIDTH  then return 1;
         y : int = xx round(pos.y);
-        if y < 0 || y > MAP_HEIGHT then return 1;
+        if y < 0 || y >= MAP_HEIGHT then return 1;
         return map.tiles[COLLISION_LAYER][x + y * MAP_WIDTH];
     }
 }

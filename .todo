@@ -1,8 +1,11 @@
+# Done
+- [X] Animations
 
 # In-Progress 
-- [ ] Animations
 
 # Inbox 
+- [ ] Rework the player layout. Make a specific struct.
+    - After the first NPC
 
 ## System
 - [ ] Multiple maps

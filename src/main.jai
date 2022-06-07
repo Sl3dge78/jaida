@@ -34,11 +34,12 @@ Game_State :: struct {
     state : State = .GAME;
     screen_width : s32;
     screen_height : s32;
-    player_pos : Vector2 = .{0,0};
+    player_pos : Vector2 = .{20, 11};
     player_texture : Renderer.Texture;
     player_direction : Direction;
     player_anim_time : float32;
-    map : Map;
+    current_map : Map;
+    world_pos : Vector2 = .{0, 0};
     map_texture : Renderer.Texture;
     camera_position : Vector2 = .{0.5, 0.75};
 }
@@ -52,12 +53,16 @@ Keymap :: struct {
 }
 
 keymaps_storage :: Keymap.[
-    Keymap.{toggle_editor, SDL_SCANCODE_F1},
-    Keymap.{save_map, SDL_SCANCODE_F5},
-    Keymap.{load_map, SDL_SCANCODE_F9},
-    Keymap.{toggle_editor_map, SDL_SCANCODE_TAB},
-    Keymap.{layer_prev, SDL_SCANCODE_1},
-    Keymap.{layer_next, SDL_SCANCODE_2},
+    Keymap.{Editor.toggle_editor,     SDL_SCANCODE_F1},
+    Keymap.{Editor.save_map,          SDL_SCANCODE_F5},
+    Keymap.{Editor.load_map,          SDL_SCANCODE_F9},
+    Keymap.{Editor.toggle_editor_map, SDL_SCANCODE_TAB},
+    Keymap.{Editor.layer_prev,        SDL_SCANCODE_1},
+    Keymap.{Editor.layer_next,        SDL_SCANCODE_2},
+    Keymap.{Editor.map_left,   SDL_SCANCODE_LEFT},
+    Keymap.{Editor.map_right,  SDL_SCANCODE_RIGHT},
+    Keymap.{Editor.map_up,     SDL_SCANCODE_UP},
+    Keymap.{Editor.map_down,   SDL_SCANCODE_DOWN},
     ];
 
 keymap_handler :: (event : *SDL_Event) {
@@ -68,44 +73,6 @@ keymap_handler :: (event : *SDL_Event) {
             }
         }
     }
-}
-
-save_map :: (down : bool) {
-    if down Map.save(context.game_state.map);
-}
-
-load_map :: (down : bool) {
-    if down Map.load(context.game_state.map);
-}
-
-toggle_editor :: (down : bool) {
-    if !down return;
-
-    context.game_state.state = ifx context.game_state.state == .GAME then Game_State.State.EDITOR else .GAME;
-    if context.game_state.state == .GAME {
-        Basic.log("Editor off");
-    } else {
-        Basic.log("Editor on");
-    }
-}
-
-toggle_editor_map :: (down : bool) {
-    if !down return;
-    context.editor.show_map = !context.editor.show_map;
-}
-
-layer_prev :: (down : bool) {
-    if !down return;
-    if context.game_state.state != .EDITOR return;
-    if context.editor.current_layer > 0 then context.editor.current_layer -= 1;
-    Basic.log("Layer : %", context.editor.current_layer);
-}
-
-layer_next :: (down : bool) {
-    if !down return;
-    if context.game_state.state != .EDITOR return;
-    if context.editor.current_layer < MAP_LAYERS-1 then context.editor.current_layer += 1;
-    Basic.log("Layer : %", context.editor.current_layer);
 }
 
 world_to_screen :: inline (cam : Vector2, pos : Vector2) -> x : int, y : int {
@@ -119,7 +86,6 @@ screen_to_world :: inline (cam : Vector2, x : int, y : int) -> Vector2 {
     result /= cast(float32)(TILE_SIZE * ZOOM);
     result -= cam;
     result += Vector2.{0.5, 0.5};
-    Basic.log("%", result);
     return result;
 }
 
@@ -131,17 +97,17 @@ move_and_slide :: (current_pos : Vector2, velocity : Vector2, map : Map) -> Vect
     // Try to move on x
     // @Speed : Get the sign of the velocity, to check only 1 side
     // @Hardcoded : Specify the size of the sprite?
-    if  Map.get_collision_at(context.game_state.map, new_center_x + Vector2.{ 0.4,  0.}) == 0 &&
-        Map.get_collision_at(context.game_state.map, new_center_x + Vector2.{-0.4,  0.}) == 0 &&
-        Map.get_collision_at(context.game_state.map, new_center_x + Vector2.{ 0.4, -0.5}) == 0 &&
-        Map.get_collision_at(context.game_state.map, new_center_x + Vector2.{-0.4, -0.5}) == 0 {
+    if  Map.get_collision_at(context.game_state.current_map, new_center_x + Vector2.{ 0.4,  0.0}) == 0 &&
+        Map.get_collision_at(context.game_state.current_map, new_center_x + Vector2.{-0.4,  0.0}) == 0 &&
+        Map.get_collision_at(context.game_state.current_map, new_center_x + Vector2.{ 0.4, -0.4}) == 0 &&
+        Map.get_collision_at(context.game_state.current_map, new_center_x + Vector2.{-0.4, -0.4}) == 0 {
             result.x += velocity.x;
     }
 
-    if  Map.get_collision_at(context.game_state.map, new_center_y + Vector2.{ 0.4,  0.}) == 0 &&
-        Map.get_collision_at(context.game_state.map, new_center_y + Vector2.{ 0.4, -0.5}) == 0 &&
-        Map.get_collision_at(context.game_state.map, new_center_y + Vector2.{-0.4,  0.}) == 0 &&
-        Map.get_collision_at(context.game_state.map, new_center_y + Vector2.{-0.4, -0.5}) == 0 {
+    if  Map.get_collision_at(context.game_state.current_map, new_center_y + Vector2.{ 0.4,  0.0}) == 0 &&
+        Map.get_collision_at(context.game_state.current_map, new_center_y + Vector2.{ 0.4, -0.5}) == 0 &&
+        Map.get_collision_at(context.game_state.current_map, new_center_y + Vector2.{-0.4,  0.0}) == 0 &&
+        Map.get_collision_at(context.game_state.current_map, new_center_y + Vector2.{-0.4, -0.5}) == 0 {
             result.y += velocity.y;
     }
 
@@ -171,7 +137,7 @@ main :: () {
     SDL_GetWindowSize(window, *context.game_state.screen_width, *context.game_state.screen_height);
     Renderer.load_texture(*context.game_state.player_texture, "res/blue_samurai.png");
     Renderer.load_texture(*context.game_state.map_texture, "res/world.png");
-    Map.load(context.game_state.map);
+    Map.load(context.game_state.current_map, context.game_state.world_pos);
 
     quit := false;
     last_time := Basic.get_time();
@@ -235,13 +201,34 @@ main :: () {
                 context.game_state.player_anim_time = 0.0;
             }
             if context.game_state.player_anim_time > 1.0 then context.game_state.player_anim_time = 0.0;
-            
-            context.game_state.player_pos = move_and_slide(context.game_state.player_pos, final_vel, context.game_state.map);
+            context.game_state.player_pos = move_and_slide(context.game_state.player_pos, final_vel, context.game_state.current_map);
+
+            Basic.log("%", context.game_state.player_pos);
+
+            // World movement
+            world_movement : Vector2;
+            if context.game_state.player_pos.x < 0              then world_movement -= Vector2.{1, 0};
+            if context.game_state.player_pos.x > MAP_WIDTH - 1  then world_movement += Vector2.{1, 0};
+            if context.game_state.player_pos.y < 0.1            then world_movement -= Vector2.{0, 1};
+            if context.game_state.player_pos.y > MAP_HEIGHT - 1 then world_movement += Vector2.{0, 1};
+            if Math.length(world_movement) > 0 {
+                if Map.exists(context.game_state.world_pos + world_movement) {
+                    context.game_state.world_pos += world_movement;
+                    Map.load(context.game_state.current_map, context.game_state.world_pos);
+                    if world_movement.x < 0 then context.game_state.player_pos.x = MAP_WIDTH - 1;
+                    if world_movement.x > 0 then context.game_state.player_pos.x = 0;
+                    if world_movement.y < 0 then context.game_state.player_pos.y = MAP_HEIGHT - 1;
+                    if world_movement.y > 0 then context.game_state.player_pos.y = 0.1;
+                }
+            }
         }
         
         if context.game_state.state == .EDITOR {
             Editor.update();
         }
+
+        // --------
+        // Drawing
 
         if context.game_state.state == .GAME {
             Renderer.clear_render_target(0, 0, 0, 1);
@@ -249,9 +236,9 @@ main :: () {
             Renderer.clear_render_target(0.5, 0, 0, 1);
         }
 
-        Map.draw_layer(0, context.game_state.map, *context.game_state.map_texture, context.game_state.camera_position);
+        Map.draw_layer(0, context.game_state.current_map, *context.game_state.map_texture, context.game_state.camera_position);
         layer_separator(0);
-        Map.draw_layer(1, context.game_state.map, *context.game_state.map_texture, context.game_state.camera_position);
+        Map.draw_layer(1, context.game_state.current_map, *context.game_state.map_texture, context.game_state.camera_position);
         layer_separator(1);
 
         // Player
@@ -262,7 +249,7 @@ main :: () {
         uv0, uv1 := get_uv_from_texture(*context.game_state.player_texture, xx context.game_state.player_direction, 6 - y);
         Renderer.immediate_quad(x0 = xx x0, y0 = xx y0, x1 = xx x1, y1 = xx y1, uv0 = uv0, uv1 = uv1);
 
-        Map.draw_layer(2, context.game_state.map, *context.game_state.map_texture, context.game_state.camera_position);
+        Map.draw_layer(2, context.game_state.current_map, *context.game_state.map_texture, context.game_state.camera_position);
 
         if context.game_state.state == .EDITOR {
             Editor.draw();

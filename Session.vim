@@ -9,37 +9,13 @@ if expand('%') == '' && !&modified && line('$') <= 1 && getline(1) == ''
 endif
 let s:shortmess_save = &shortmess
 set shortmess=aoO
-badd +263 src/main.jai
-badd +441 ~/jai/modules/Simp/immediate.jai
-badd +1 term://~/work/zelda/src//12097:/bin/sh
-badd +132 ~/jai/modules/Simp/backend/gl.jai
-badd +1 src/input.jai
-badd +1 ~/jai/modules/Simp/shader.jai
-badd +32 ~/jai/modules/Simp/module.jai
-badd +167 ~/jai/modules/Simp/examples/example.jai
-badd +43 ~/jai/modules/Input/module.jai
-badd +296 ~/jai/modules/GetRect/module.jai
-badd +616 ~/jai/modules/GetRect/examples/example.jai
-badd +622 ~/jai/modules/Input/windows.jai
-badd +568 ~/jai/modules/Input/x11.jai
-badd +115 ~/jai/modules/GetRect/system/active_widgets.jai
-badd +114 ~/jai/modules/GetRect/system/pointer_image.jai
-badd +1 ~/jai/modules/GetRect/system/system.jai
-badd +538 ~/jai/modules/GetRect/widgets/button.jai
-badd +1 ~/jai/modules/GetRect/widgets/widgets.jai
-badd +150 ~/jai/modules/GetRect/widgets/checkbox.jai
-badd +1 ~/jai/modules/GetRect/system/common_text_input.jai
-badd +1 ~/jai/modules/GetRect/system/occlusion.jai
-badd +1 ~/jai/modules/GetRect/system/state.jai
-badd +1 ~/jai/modules/Window_Creation/module.jai
-badd +177 ~/jai/modules/Window_Creation/linux.jai
-badd +1 ~/jai
-badd +2 ~/jai/CHANGELOG.txt
-badd +3 ~/jai/examples/code_type.jai
-badd +0 vimspector.Variables
-badd +0 vimspector.Watches
-badd +0 vimspector.StackTrace
-badd +0 vimspector.Console
+badd +37 src/main.jai
+badd +3 src/map.jai
+badd +17 src/editor.jai
+badd +12 .todo
+badd +0 term://~/work/zelda/src//7382:/bin/sh
+badd +1 bin/map.bin
+badd +5 ~/.config/nvim/init.vim
 argglobal
 %argdel
 set stal=2
@@ -50,8 +26,16 @@ let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
 wincmd _ | wincmd |
+split
+1wincmd k
+wincmd _ | wincmd |
 vsplit
 1wincmd h
+wincmd w
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd w
 wincmd w
 let &splitbelow = s:save_splitbelow
 let &splitright = s:save_splitright
@@ -62,10 +46,15 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
+exe '1resize ' . ((&lines * 65 + 40) / 80)
 exe 'vert 1resize ' . ((&columns * 158 + 158) / 317)
+exe '2resize ' . ((&lines * 37 + 40) / 80)
 exe 'vert 2resize ' . ((&columns * 158 + 158) / 317)
+exe '3resize ' . ((&lines * 27 + 40) / 80)
+exe 'vert 3resize ' . ((&columns * 158 + 158) / 317)
+exe '4resize ' . ((&lines * 10 + 40) / 80)
 argglobal
-balt ~/jai/modules/Simp/immediate.jai
+balt src/main.jai
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -76,19 +65,19 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 252 - ((60 * winheight(0) + 38) / 76)
+let s:l = 79 - ((34 * winheight(0) + 32) / 65)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 252
-normal! 05|
+keepjumps 79
+normal! 017|
 wincmd w
 argglobal
-if bufexists(fnamemodify("src/main.jai", ":p")) | buffer src/main.jai | else | edit src/main.jai | endif
+if bufexists(fnamemodify(".todo", ":p")) | buffer .todo | else | edit .todo | endif
 if &buftype ==# 'terminal'
-  silent file src/main.jai
+  silent file .todo
 endif
-balt ~/jai/modules/Input/module.jai
+balt ~/.config/nvim/init.vim
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -99,25 +88,80 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 75 - ((0 * winheight(0) + 38) / 76)
+let s:l = 12 - ((11 * winheight(0) + 18) / 37)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 75
-normal! 05|
+keepjumps 12
+normal! 011|
+wincmd w
+argglobal
+if bufexists(fnamemodify("src/map.jai", ":p")) | buffer src/map.jai | else | edit src/map.jai | endif
+if &buftype ==# 'terminal'
+  silent file src/map.jai
+endif
+balt src/editor.jai
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+silent! normal! zE
+let &fdl = &fdl
+let s:l = 43 - ((14 * winheight(0) + 13) / 27)
+if s:l < 1 | let s:l = 1 | endif
+keepjumps exe s:l
+normal! zt
+keepjumps 43
+normal! 0
+wincmd w
+argglobal
+enew
+balt src/editor.jai
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
 lcd ~/work/zelda
 wincmd w
 2wincmd w
+exe '1resize ' . ((&lines * 65 + 40) / 80)
 exe 'vert 1resize ' . ((&columns * 158 + 158) / 317)
+exe '2resize ' . ((&lines * 37 + 40) / 80)
 exe 'vert 2resize ' . ((&columns * 158 + 158) / 317)
+exe '3resize ' . ((&lines * 27 + 40) / 80)
+exe 'vert 3resize ' . ((&columns * 158 + 158) / 317)
+exe '4resize ' . ((&lines * 10 + 40) / 80)
 tabnext
-edit ~/jai/examples
+edit ~/work/zelda/src/map.jai
 let s:save_splitbelow = &splitbelow
 let s:save_splitright = &splitright
 set splitbelow splitright
 wincmd _ | wincmd |
 vsplit
 1wincmd h
+wincmd _ | wincmd |
+split
+wincmd _ | wincmd |
+split
+2wincmd k
+wincmd w
+wincmd w
+wincmd w
+wincmd _ | wincmd |
+split
+1wincmd k
+wincmd _ | wincmd |
+vsplit
+1wincmd h
+wincmd w
 wincmd w
 let &splitbelow = s:save_splitbelow
 let &splitright = s:save_splitright
@@ -128,8 +172,55 @@ set winminheight=0
 set winheight=1
 set winminwidth=0
 set winwidth=1
-exe 'vert 1resize ' . ((&columns * 79 + 158) / 317)
-exe 'vert 2resize ' . ((&columns * 237 + 158) / 317)
+exe '1resize ' . ((&lines * 25 + 40) / 80)
+exe 'vert 1resize ' . ((&columns * 50 + 158) / 317)
+exe '2resize ' . ((&lines * 25 + 40) / 80)
+exe 'vert 2resize ' . ((&columns * 50 + 158) / 317)
+exe '3resize ' . ((&lines * 24 + 40) / 80)
+exe 'vert 3resize ' . ((&columns * 50 + 158) / 317)
+exe '4resize ' . ((&lines * 70 + 40) / 80)
+exe 'vert 4resize ' . ((&columns * 185 + 158) / 317)
+exe '5resize ' . ((&lines * 70 + 40) / 80)
+exe 'vert 5resize ' . ((&columns * 80 + 158) / 317)
+exe '6resize ' . ((&lines * 5 + 40) / 80)
+exe 'vert 6resize ' . ((&columns * 266 + 158) / 317)
+argglobal
+enew
+file ~/work/zelda/vimspector.Variables
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+wincmd w
+argglobal
+enew
+file ~/work/zelda/vimspector.Watches
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+wincmd w
+argglobal
+enew
+file ~/work/zelda/vimspector.StackTrace
+balt ~/work/zelda/src/main.jai
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+wincmd w
 argglobal
 setlocal fdm=manual
 setlocal fde=0
@@ -141,19 +232,19 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 let &fdl = &fdl
-let s:l = 8 - ((7 * winheight(0) + 38) / 76)
+let s:l = 57 - ((56 * winheight(0) + 35) / 70)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 8
-normal! 0
-lcd ~/work/zelda
+keepjumps 57
+normal! 024|
 wincmd w
 argglobal
-if bufexists(fnamemodify("~/jai/examples/code_type.jai", ":p")) | buffer ~/jai/examples/code_type.jai | else | edit ~/jai/examples/code_type.jai | endif
+if bufexists(fnamemodify("term://~/work/zelda/src//7382:/bin/sh", ":p")) | buffer term://~/work/zelda/src//7382:/bin/sh | else | edit term://~/work/zelda/src//7382:/bin/sh | endif
 if &buftype ==# 'terminal'
-  silent file ~/jai/examples/code_type.jai
+  silent file term://~/work/zelda/src//7382:/bin/sh
 endif
+balt ~/work/zelda/src/main.jai
 setlocal fdm=manual
 setlocal fde=0
 setlocal fmr={{{,}}}
@@ -162,18 +253,37 @@ setlocal fdl=0
 setlocal fml=1
 setlocal fdn=20
 setlocal fen
-silent! normal! zE
-let &fdl = &fdl
-let s:l = 3 - ((2 * winheight(0) + 38) / 76)
+let s:l = 1 - ((0 * winheight(0) + 35) / 70)
 if s:l < 1 | let s:l = 1 | endif
 keepjumps exe s:l
 normal! zt
-keepjumps 3
+keepjumps 1
 normal! 0
-lcd ~/work/zelda
 wincmd w
-exe 'vert 1resize ' . ((&columns * 79 + 158) / 317)
-exe 'vert 2resize ' . ((&columns * 237 + 158) / 317)
+argglobal
+enew
+file ~/work/zelda/vimspector.Console
+setlocal fdm=manual
+setlocal fde=0
+setlocal fmr={{{,}}}
+setlocal fdi=#
+setlocal fdl=0
+setlocal fml=1
+setlocal fdn=20
+setlocal fen
+wincmd w
+exe '1resize ' . ((&lines * 25 + 40) / 80)
+exe 'vert 1resize ' . ((&columns * 50 + 158) / 317)
+exe '2resize ' . ((&lines * 25 + 40) / 80)
+exe 'vert 2resize ' . ((&columns * 50 + 158) / 317)
+exe '3resize ' . ((&lines * 24 + 40) / 80)
+exe 'vert 3resize ' . ((&columns * 50 + 158) / 317)
+exe '4resize ' . ((&lines * 70 + 40) / 80)
+exe 'vert 4resize ' . ((&columns * 185 + 158) / 317)
+exe '5resize ' . ((&lines * 70 + 40) / 80)
+exe 'vert 5resize ' . ((&columns * 80 + 158) / 317)
+exe '6resize ' . ((&lines * 5 + 40) / 80)
+exe 'vert 6resize ' . ((&columns * 266 + 158) / 317)
 tabnext 1
 set stal=1
 if exists('s:wipebuf') && len(win_findbuf(s:wipebuf)) == 0 && getbufvar(s:wipebuf, '&buftype') isnot# 'terminal'

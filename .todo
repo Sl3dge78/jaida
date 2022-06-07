@@ -1,17 +1,14 @@
-# Done
-- [X] Animations
 
 # In-Progress 
 
 # Inbox 
 - [ ] Rework the player layout. Make a specific struct.
-    - After the first NPC
+    - After the first NPC?
 
 ## System
-- [ ] Multiple maps
-- [ ] Combat
 - [ ] Enemies
     - [ ] Follow AI
+- [ ] Combat
 - [ ] NPC
     - [ ] Walks random
     - [ ] Dialogs
@@ -21,6 +18,9 @@
 - [ ] Dungeon 
     - [ ] Puzzles
 
-
 # Enhancements
     - [ ] (Collision) Allow definition of a custom collision box, for some tiles.
+
+# Done
+- [X] Animations
+- [X] Multiple maps

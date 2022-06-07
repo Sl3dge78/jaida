@@ -90,13 +90,14 @@ screen_to_world :: inline (cam : Vector2, x : int, y : int) -> Vector2 {
 }
 
 
-move_and_slide :: (current_pos : Vector2, velocity : Vector2, map : Map) -> Vector2 {
-    result : Vector2 = current_pos;
+/// Computes a new velocity that avoids map obstacles
+move_and_slide :: (current_pos : Vector2, velocity : Vector2, map : Map) -> new_vel : Vector2 {
+    result : Vector2;
     new_center_x := current_pos + xy(velocity.x, 0);
     new_center_y := current_pos + xy(0, velocity.y);
-    // Try to move on x
-    // @Speed : Get the sign of the velocity, to check only 1 side
+    // @Speed : Get the sign of the velocity? to check only 1 side
     // @Hardcoded : Specify the size of the sprite?
+    // Try to move on x
     if  Map.get_collision_at(context.game_state.current_map, new_center_x + Vector2.{ 0.4,  0.0}) == 0 &&
         Map.get_collision_at(context.game_state.current_map, new_center_x + Vector2.{-0.4,  0.0}) == 0 &&
         Map.get_collision_at(context.game_state.current_map, new_center_x + Vector2.{ 0.4, -0.4}) == 0 &&
@@ -177,33 +178,28 @@ main :: () {
         }
 
         if context.game_state.state == .GAME {
+            // Player movement
             player_vel : Vector2;
-            if Input.get_keyboard(SDL_SCANCODE_W) {
-                player_vel.y += 1;
-                context.game_state.player_direction = .NORTH;
-            }        
-            if Input.get_keyboard(SDL_SCANCODE_A) {
-                player_vel.x -= 1;
-                context.game_state.player_direction = .WEST;
-            }
-            if Input.get_keyboard(SDL_SCANCODE_S) {
-                player_vel.y -= 1;
-                context.game_state.player_direction = .SOUTH;
-            } 
-            if Input.get_keyboard(SDL_SCANCODE_D) {
-                player_vel.x += 1;
-                context.game_state.player_direction = .EAST;
-            } 
-            final_vel := Math.unit_vector(player_vel) * (delta_time * PLAYER_SPEED);
+            if Input.get_keyboard(SDL_SCANCODE_W) then player_vel.y += 1;         
+            if Input.get_keyboard(SDL_SCANCODE_A) then player_vel.x -= 1;
+            if Input.get_keyboard(SDL_SCANCODE_S) then player_vel.y -= 1; 
+            if Input.get_keyboard(SDL_SCANCODE_D) then player_vel.x += 1; 
+            norm_vel := Math.unit_vector(player_vel) * (delta_time * PLAYER_SPEED);
+            final_vel := move_and_slide(context.game_state.player_pos, norm_vel, context.game_state.current_map);
+            context.game_state.player_pos += final_vel;
+
+            // Walk animation
             if length(final_vel) > 0 {
                 context.game_state.player_anim_time += delta_time;
+                if final_vel.x > 0 then context.game_state.player_direction = .EAST;
+                if final_vel.x < 0 then context.game_state.player_direction = .WEST;
+                if final_vel.y > 0 then context.game_state.player_direction = .NORTH;
+                if final_vel.y < 0 then context.game_state.player_direction = .SOUTH;
             } else {
                 context.game_state.player_anim_time = 0.0;
             }
             if context.game_state.player_anim_time > 1.0 then context.game_state.player_anim_time = 0.0;
-            context.game_state.player_pos = move_and_slide(context.game_state.player_pos, final_vel, context.game_state.current_map);
 
-            Basic.log("%", context.game_state.player_pos);
 
             // World movement
             world_movement : Vector2;

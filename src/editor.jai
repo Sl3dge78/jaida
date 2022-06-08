@@ -11,48 +11,50 @@ Editor :: struct {
     zoom := 2.0;
 
     update :: () {
+        game := *context.game;
+        editor := *context.editor;
         if Input.get_mouse_button(SDL_BUTTON_LEFT) {
-            if !context.editor.show_map || Input.mouse_x > context.game_state.screen_width / 2 {
+            if !editor.show_map || Input.mouse_x > game.screen_width / 2 {
                 Map.set_tile(
-                    context.game_state.current_map,
-                    screen_to_world(context.game_state.camera_position, Input.mouse_x, Input.mouse_y),
-                    xx context.editor.current_layer,
-                    context.editor.selected_tile);
+                    game.current_map,
+                    Map.screen_to_map(game.camera_position, Input.mouse_x, Input.mouse_y),
+                    xx editor.current_layer,
+                    editor.selected_tile);
             }
         }
         if Input.get_mouse_button(SDL_BUTTON_RIGHT) {
-            if !context.editor.show_map || Input.mouse_x > context.game_state.screen_width / 2 {
+            if !editor.show_map || Input.mouse_x > game.screen_width / 2 {
                 Map.set_tile(
-                    context.game_state.current_map,
-                    screen_to_world(context.game_state.camera_position, Input.mouse_x, Input.mouse_y),
-                    xx context.editor.current_layer,
+                    game.current_map,
+                    Map.screen_to_map(game.camera_position, Input.mouse_x, Input.mouse_y),
+                    xx editor.current_layer,
                     0);
             }
         }
 
         if Input.get_keyboard(SDL_SCANCODE_W) {
-            context.editor.offset_y += 1;
-            if (context.editor.offset_y > 0) context.editor.offset_y = 0; 
+            editor.offset_y += 1;
+            if (editor.offset_y > 0) editor.offset_y = 0; 
         }        
         if Input.get_keyboard(SDL_SCANCODE_S) {
-            context.editor.offset_y -= 1;
-            if (context.editor.offset_y < -42) context.editor.offset_y = -42; // @Hardcoded, can't be bothered to do the math
+            editor.offset_y -= 1;
+            if (editor.offset_y < -42) editor.offset_y = -42; // @Hardcoded, can't be bothered to do the math
         } 
         if Input.get_keyboard(SDL_SCANCODE_A) {
-            context.editor.offset_x -= 1;
-            if (context.editor.offset_x < -43) context.editor.offset_x = -43; // @Hardcoded, can't be bothered to do the math
+            editor.offset_x -= 1;
+            if (editor.offset_x < -43) editor.offset_x = -43; // @Hardcoded, can't be bothered to do the math
         }
         if Input.get_keyboard(SDL_SCANCODE_D) {
-            context.editor.offset_x += 1;
-            if (context.editor.offset_x > 0) context.editor.offset_x = 0;
+            editor.offset_x += 1;
+            if (editor.offset_x > 0) editor.offset_x = 0;
         } 
     }
 
     draw :: () {
-        using context.game_state;
+        using context.game;
         
         if context.editor.current_layer == 3 {
-            Map.draw_layer(3, context.game_state.current_map, *context.game_state.map_texture, context.game_state.camera_position);
+            Map.draw_layer(3, current_map, *map_texture, camera_position);
         }
 
         if context.editor.show_map {
@@ -89,11 +91,11 @@ Editor :: struct {
     }
 
     save_map :: (down : bool) {
-        if down Map.save(context.game_state.current_map, context.game_state.world_pos);
+        if down Map.save(context.game.current_map, context.game.world_pos);
     }
 
     load_map :: (down : bool) {
-        if down Map.load(context.game_state.current_map, context.game_state.world_pos);
+        if down Map.load(context.game.current_map, context.game.world_pos);
     }
 
     change_or_create_map :: (map : Map, pos : Vector2) {
@@ -108,8 +110,8 @@ Editor :: struct {
     toggle_editor :: (down : bool) {
         if !down return;
 
-        context.game_state.state = ifx context.game_state.state == .GAME then Game_State.State.EDITOR else .GAME;
-        if context.game_state.state == .GAME {
+        context.game.state = ifx context.game.state == .GAME then Game.State.EDITOR else .GAME;
+        if context.game.state == .GAME {
             Basic.log("Editor off");
         } else {
             Basic.log("Editor on");
@@ -123,43 +125,43 @@ Editor :: struct {
 
     layer_prev :: (down : bool) {
         if !down return;
-        if context.game_state.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if context.editor.current_layer > 0 then context.editor.current_layer -= 1;
         Basic.log("Layer : %", context.editor.current_layer);
     }
 
     layer_next :: (down : bool) {
         if !down return;
-        if context.game_state.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if context.editor.current_layer < MAP_LAYERS-1 then context.editor.current_layer += 1;
         Basic.log("Layer : %", context.editor.current_layer);
     }
 
     map_left :: (down : bool) {
         if down {
-            context.game_state.world_pos.x -= 1;
-            Editor.change_or_create_map(context.game_state.current_map, context.game_state.world_pos);
+            context.game.world_pos.x -= 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
         }
     }
 
     map_right :: (down : bool) {
         if down {
-            context.game_state.world_pos.x += 1;
-            Editor.change_or_create_map(context.game_state.current_map, context.game_state.world_pos);
+            context.game.world_pos.x += 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
         }
     }
 
     map_up :: (down : bool) {
         if down {
-            context.game_state.world_pos.y += 1;
-            Editor.change_or_create_map(context.game_state.current_map, context.game_state.world_pos);
+            context.game.world_pos.y += 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
         }
     }
 
     map_down :: (down : bool) {
         if down {
-            context.game_state.world_pos.y -= 1;
-            Editor.change_or_create_map(context.game_state.current_map, context.game_state.world_pos);
+            context.game.world_pos.y -= 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
         }
     }
 }

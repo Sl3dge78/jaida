@@ -14,8 +14,8 @@ Map :: struct {
         y := 0;
         for tiles[layer] {
             map_coord := xy(cast(float32)(it_index % MAP_WIDTH), cast(float32)(it_index / MAP_WIDTH));
-            x0, y0 := world_to_screen(cam, map_coord + Vector2.{-0.5, -0.5});
-            x1, y1 := world_to_screen(cam, map_coord + Vector2.{0.5, 0.5});
+            x0, y0 := Map.map_to_screen(cam, map_coord + Vector2.{-0.5, -0.5});
+            x1, y1 := Map.map_to_screen(cam, map_coord + Vector2.{0.5, 0.5});
 
             uv0, uv1 := get_uv_from_texture(texture, it); 
 
@@ -70,5 +70,19 @@ Map :: struct {
         y : int = xx round(pos.y);
         if y < 0 || y >= MAP_HEIGHT then return 1;
         return map.tiles[COLLISION_LAYER][x + y * MAP_WIDTH];
+    }
+
+    map_to_screen :: inline (cam : Vector2, pos : Vector2) -> x : int, y : int {
+        x : int = xx ((pos.x + cam.x) * TILE_SIZE * ZOOM);
+        y : int = xx ((pos.y + cam.y) * TILE_SIZE * ZOOM);
+        return x, y;
+    }
+
+    screen_to_map :: inline (cam : Vector2, x : int, y : int) -> Vector2 {
+        result := xy(xx x, xx y);
+        result /= cast(float32)(TILE_SIZE * ZOOM);
+        result -= cam;
+        result += Vector2.{0.5, 0.5};
+        return result;
     }
 }

@@ -1,17 +1,22 @@
 
 # In-Progress 
+- [ ] NPC
+    - [ ] Walks random
+    - [ ] Dialogs
 
 # Inbox 
 - [ ] Rework the player layout. Make a specific struct.
     - After the first NPC?
+- [ ] Rework the animation behavior
+    - [ ] Switch between states
+    - [ ] Looping
+    - [ ] Should the state be kept in the animator?
+    - [ ] Animation times
 
 ## System
 - [ ] Enemies
     - [ ] Follow AI
 - [ ] Combat
-- [ ] NPC
-    - [ ] Walks random
-    - [ ] Dialogs
 - [ ] Puzzles (push blocks?)
 
 ## Content

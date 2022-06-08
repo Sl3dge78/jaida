@@ -31,30 +31,6 @@ Direction :: enum u8 {
     EAST :: 3;
 }
 
-/// Computes a new velocity that avoids map obstacles
-move_and_slide :: (current_pos : Vector2, velocity : Vector2, map : Map) -> new_vel : Vector2 {
-    result : Vector2;
-    new_center_x := current_pos + xy(velocity.x, 0);
-    new_center_y := current_pos + xy(0, velocity.y);
-    // @Speed : Get the sign of the velocity? to check only 1 side
-    // @Hardcoded : Specify the size of the sprite?
-    // Try to move on x
-    if  Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{ 0.4,  0.0}) == 0 &&
-        Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{-0.4,  0.0}) == 0 &&
-        Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{ 0.4, -0.4}) == 0 &&
-        Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{-0.4, -0.4}) == 0 {
-            result.x += velocity.x;
-    }
-
-    if  Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{ 0.4,  0.0}) == 0 &&
-        Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{ 0.4, -0.5}) == 0 &&
-        Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{-0.4,  0.0}) == 0 &&
-        Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{-0.4, -0.5}) == 0 {
-            result.y += velocity.y;
-    }
-
-    return result;
-}
 
 main :: () {
     // Init

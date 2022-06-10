@@ -1,5 +1,6 @@
 Basic :: #import "Basic";
 Math :: #import "Math";
+Random :: #import "Random";
 using Math; // To import operator overloading
 libc :: #foreign_system_library "libm";
 round :: (val : float32) -> float32 #foreign libc "roundf";
@@ -17,12 +18,10 @@ Input :: #import "sInput";
 #load "map.jai";
 #load "editor.jai";
 #load "character.jai";
-#load "animator.jai";
 
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;
 ZOOM :: 2;
-PLAYER_SPEED :: 5.0;
 
 Direction :: enum u8 {
     SOUTH :: 0;
@@ -30,7 +29,6 @@ Direction :: enum u8 {
     WEST :: 2;
     EAST :: 3;
 }
-
 
 main :: () {
     // Init

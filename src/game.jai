@@ -8,56 +8,41 @@ Game :: struct {
     state : State = .GAME;
     screen_width : s32;
     screen_height : s32;
-    player : Character;
-    player_texture : Renderer.Texture;
-    player_animator : Animator;
+
     current_map : Map;
-    world_pos : Vector2 = .{0, 0};
     map_texture : Renderer.Texture;
+    
     camera_position : Vector2 = .{0.5, 0.75};
+
+    blue_samurai_texture : Renderer.Texture;
+
+    player : Character;
+    player_brain : Player_Brain;
+
+    all_characters : [..]Character;
+    active_characters : [..]*Character;
+    inactive_characters : [..]*Character;
+    npc_brains : [..]NPC_Brain;
 
     load :: () {
         using context.game;
 
-        Renderer.load_texture(*player_texture, "res/blue_samurai.png");
+        Renderer.load_texture(*blue_samurai_texture, "res/blue_samurai.png");
         Renderer.load_texture(*map_texture, "res/world.png");
-        Map.load(current_map, world_pos);
-        player = Character.init(sprite_sheet = player_texture);
+        player = Character.init(sprite_sheet = blue_samurai_texture);
+        Basic.array_add(*all_characters, Character.init(sprite_sheet = blue_samurai_texture));
+        request_map_change(current_map, player.world_pos);
     }
 
     update :: (delta_time : float32) {
         game := *context.game;
         if game.state == .GAME {
-            { // Player update 
-                player := *game.player;
-                // Movement
-                player_vel : Vector2;
-                if Input.get_keyboard(SDL_SCANCODE_W) then player_vel.y += 1;         
-                if Input.get_keyboard(SDL_SCANCODE_A) then player_vel.x -= 1;
-                if Input.get_keyboard(SDL_SCANCODE_S) then player_vel.y -= 1; 
-                if Input.get_keyboard(SDL_SCANCODE_D) then player_vel.x += 1; 
-                norm_vel := Math.unit_vector(player_vel) * (delta_time * PLAYER_SPEED);
-                Character.translate_and_animate(player, norm_vel, *game.player_animator);
+            Player_Brain.update(*game.player_brain, *game.player, delta_time);
 
-                // World movement
-                world_movement : Vector2;
-                if player.pos.x < 0              then world_movement -= Vector2.{1, 0};
-                if player.pos.x > MAP_WIDTH - 1  then world_movement += Vector2.{1, 0};
-                if player.pos.y < 0.1            then world_movement -= Vector2.{0, 1};
-                if player.pos.y > MAP_HEIGHT - 1 then world_movement += Vector2.{0, 1};
-                if Math.length(world_movement) > 0 {
-                    if Map.exists(game.world_pos + world_movement) {
-                        game.world_pos += world_movement;
-                        Map.load(game.current_map, game.world_pos);
-                        if world_movement.x < 0 then player.pos.x = MAP_WIDTH - 1;
-                        if world_movement.x > 0 then player.pos.x = 0;
-                        if world_movement.y < 0 then player.pos.y = MAP_HEIGHT - 1;
-                        if world_movement.y > 0 then player.pos.y = 0.1;
-                    }
-                }
+            // @Speed : Easy to multithread
+            for * game.npc_brains {
+                NPC_Brain.update(it, game.active_characters[it_index], delta_time);
             }
-
-            Animator.update(*game.player_animator, delta_time);
         } else if game.state == .EDITOR {
             Editor.update();
         }
@@ -84,14 +69,39 @@ Game :: struct {
         layer_separator(1);
 
         // Player
-        Animator.set_char_sprites(*game.player_animator, *game.player);
         Character.draw(*game.player);
+        for game.active_characters {
+            Character.draw(it);
+        }
 
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
 
         if game.state == .EDITOR {
             Editor.draw();
         }
+    }
+
+    request_map_change :: (current_map : Map, map_pos : Vector2) -> bool {
+
+        success := Map.load(current_map, map_pos);
+
+        if !success return false;
+        
+        Basic.array_reset(*context.game.active_characters);
+        Basic.array_reset(*context.game.inactive_characters);
+
+        for context.game.all_characters {
+            if it.world_pos == map_pos {
+                Basic.array_add(*context.game.active_characters, *context.game.all_characters[it_index]);
+            } else {
+                Basic.array_add(*context.game.inactive_characters, *context.game.all_characters[it_index]);
+            }
+        }
+    
+        Basic.array_reset_keeping_memory(*context.game.npc_brains);
+        Basic.array_resize(*context.game.npc_brains, context.game.active_characters.count);
+
+        return true;
     }
 
     /// Computes a new velocity that avoids map obstacles

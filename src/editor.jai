@@ -91,16 +91,16 @@ Editor :: struct {
     }
 
     save_map :: (down : bool) {
-        if down Map.save(context.game.current_map, context.game.world_pos);
+        if down Map.save(context.game.current_map, context.game.player.world_pos);
     }
 
     load_map :: (down : bool) {
-        if down Map.load(context.game.current_map, context.game.world_pos);
+        if down Map.load(context.game.current_map, context.game.player.world_pos);
     }
 
     change_or_create_map :: (map : Map, pos : Vector2) {
         if Map.exists(pos) {
-            Map.load(map, pos);
+            Game.request_map_change(map, pos);
         } else {
             Basic.Initialize(*map.tiles, Map_Type);
             Basic.log("Created new blank map at %.", pos);
@@ -138,30 +138,34 @@ Editor :: struct {
     }
 
     map_left :: (down : bool) {
+        if context.game.state != .EDITOR return;
         if down {
-            context.game.world_pos.x -= 1;
-            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
+            context.game.player.world_pos.x -= 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     map_right :: (down : bool) {
+        if context.game.state != .EDITOR return;
         if down {
-            context.game.world_pos.x += 1;
-            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
+            context.game.player.world_pos.x += 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     map_up :: (down : bool) {
+        if context.game.state != .EDITOR return;
         if down {
-            context.game.world_pos.y += 1;
-            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
+            context.game.player.world_pos.y += 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     map_down :: (down : bool) {
+        if context.game.state != .EDITOR return;
         if down {
-            context.game.world_pos.y -= 1;
-            Editor.change_or_create_map(context.game.current_map, context.game.world_pos);
+            context.game.player.world_pos.y -= 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 }

@@ -1,30 +1,25 @@
 
 # In-Progress 
-- [ ] NPC
-    - [ ] Walks random
-    - [ ] Dialogs
-
-# Inbox 
-- [ ] Rework the player layout. Make a specific struct.
-    - After the first NPC?
-- [ ] Rework the animation behavior
-    - [ ] Switch between states
-    - [ ] Looping
-    - [ ] Should the state be kept in the animator?
-    - [ ] Animation times
-
-## System
 - [ ] Enemies
     - [ ] Follow AI
+
+# Inbox 
+
+## System
+- [X] NPC
+    - [X] Walks random
+    - [ ] Dialogs
 - [ ] Combat
 - [ ] Puzzles (push blocks?)
+- [ ] Multithread brains
 
 ## Content
 - [ ] Dungeon 
     - [ ] Puzzles
 
 # Enhancements
-    - [ ] (Collision) Allow definition of a custom collision box, for some tiles.
+- [ ] (Collision) Allow definition of a custom collision box, for some tiles.
+- [ ] (Collision) Detect them with NPCs
 
 # Done
 - [X] Animations

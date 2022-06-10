@@ -45,15 +45,16 @@ Map :: struct {
         Basic.log("Saved!");
     }
 
-    load :: (using map : Map, world_pos : Vector2) {
+    load :: (using map : Map, world_pos : Vector2) -> bool {
         map_file, success := File.file_open(get_map_file_name(world_pos));
         if !success {
             Basic.log_error("Unable to open map file!");
-            return;
+            return false;
         }
         defer File.file_close(*map_file);
         File.file_read(*map_file, tiles.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(tiles[0][0])));
         Basic.log("Loaded map at %.", world_pos);
+        return true;
     }
 
     // @Speed : This is kind of dumb

@@ -1,26 +1,31 @@
 
 # In-Progress 
-- [ ] Enemies
-    - [ ] Follow AI
 
 # Inbox 
+- [ ] Save characters in maps
+- [ ] Enemy AI 2.0
+    - [ ] Pathfinding
+    - [ ] Attack patterns
 
 ## System
-- [X] NPC
-    - [X] Walks random
-    - [ ] Dialogs
-- [ ] Combat
+- [ ] Combat 1.0
+- [ ] Interiors ( = maps that aren't on the main map, in the negatives?)
 - [ ] Puzzles (push blocks?)
-- [ ] Multithread brains
+- [ ] Dialogs
+- [ ] (Collision) Detect them with NPCs
 
 ## Content
 - [ ] Dungeon 
     - [ ] Puzzles
 
-# Enhancements
+# Later
+- [ ] Multithread brains
 - [ ] (Collision) Allow definition of a custom collision box, for some tiles.
-- [ ] (Collision) Detect them with NPCs
 
 # Done
 - [X] Animations
 - [X] Multiple maps
+- [X] Enemies
+    - [X] Follow AI
+- [X] NPC
+    - [X] Walks random

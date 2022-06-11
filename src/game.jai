@@ -15,6 +15,7 @@ Game :: struct {
     camera_position : Vector2 = .{0.5, 0.75};
 
     blue_samurai_texture : Renderer.Texture;
+    red_samurai_texture : Renderer.Texture;
 
     player : Character;
     player_brain : Player_Brain;
@@ -23,14 +24,17 @@ Game :: struct {
     active_characters : [..]*Character;
     inactive_characters : [..]*Character;
     npc_brains : [..]NPC_Brain;
+    enemy_brains : [..]Enemy_Brain;
 
     load :: () {
         using context.game;
 
         Renderer.load_texture(*blue_samurai_texture, "res/blue_samurai.png");
+        Renderer.load_texture(*red_samurai_texture, "res/red_samurai.png");
         Renderer.load_texture(*map_texture, "res/world.png");
-        player = Character.init(sprite_sheet = blue_samurai_texture);
-        Basic.array_add(*all_characters, Character.init(sprite_sheet = blue_samurai_texture));
+        player = Character.init(tag = .PLAYER, sprite_sheet = blue_samurai_texture);
+        Basic.array_add(*all_characters, Character.init(tag = .NPC, sprite_sheet = blue_samurai_texture));
+        Basic.array_add(*all_characters, Character.init(tag = .ENEMY, pos = .{2, 2}, sprite_sheet = red_samurai_texture));
         request_map_change(current_map, player.world_pos);
     }
 
@@ -41,7 +45,10 @@ Game :: struct {
 
             // @Speed : Easy to multithread
             for * game.npc_brains {
-                NPC_Brain.update(it, game.active_characters[it_index], delta_time);
+                NPC_Brain.update(it, delta_time);
+            }
+            for * game.enemy_brains {
+                Enemy_Brain.update(it, *game.player, delta_time);
             }
         } else if game.state == .EDITOR {
             Editor.update();
@@ -87,19 +94,27 @@ Game :: struct {
 
         if !success return false;
         
-        Basic.array_reset(*context.game.active_characters);
-        Basic.array_reset(*context.game.inactive_characters);
+        Basic.array_reset_keeping_memory(*context.game.active_characters);
+        Basic.array_reset_keeping_memory(*context.game.inactive_characters);
+        Basic.array_reset_keeping_memory(*context.game.npc_brains);
+        Basic.array_reset_keeping_memory(*context.game.enemy_brains);
 
         for context.game.all_characters {
             if it.world_pos == map_pos {
-                Basic.array_add(*context.game.active_characters, *context.game.all_characters[it_index]);
+                char := *context.game.all_characters[it_index];
+                Basic.array_add(*context.game.active_characters, char);
+                if char.tag == {
+                    case .NPC; 
+                        brain := Basic.array_add(*context.game.npc_brains);
+                        brain.char = char;
+                    case .ENEMY;
+                        brain := Basic.array_add(*context.game.enemy_brains); 
+                        brain.char = char;
+                }
             } else {
                 Basic.array_add(*context.game.inactive_characters, *context.game.all_characters[it_index]);
             }
         }
-    
-        Basic.array_reset_keeping_memory(*context.game.npc_brains);
-        Basic.array_resize(*context.game.npc_brains, context.game.active_characters.count);
 
         return true;
     }

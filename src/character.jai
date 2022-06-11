@@ -1,7 +1,14 @@
 
 Character :: struct {
+
+    Tag :: enum {
+        PLAYER;
+        NPC;
+        ENEMY;
+    };
+    tag : Tag = ---;
     pos : Vector2;
-    sprite_sheet : Renderer.Texture;
+    sprite_sheet : Renderer.Texture = ---;
     time : float32;
     direction : Direction;
     state : enum {
@@ -11,8 +18,9 @@ Character :: struct {
     } = .IDLE;
     world_pos : Vector2;
 
-    init :: (pos : Vector2 = .{20, 11}, sprite_sheet : Renderer.Texture) -> Character {
+    init :: (tag : Tag, pos : Vector2 = .{20, 11}, sprite_sheet : Renderer.Texture) -> Character {
         result : Character;
+        result.tag = tag;
         result.pos = pos;
         result.sprite_sheet = sprite_sheet;
         return result;
@@ -102,6 +110,7 @@ Player_Brain :: struct {
 }
 
 NPC_Brain :: struct {
+    char : *Character;
     current_dest : Vector2;
     SPEED :: 2.5;
     wait_time : float32 = 0;
@@ -110,7 +119,7 @@ NPC_Brain :: struct {
         WALKING;
     } = .IDLE;
 
-    update :: (using brain : *NPC_Brain, char : *Character, delta_time : float32) {
+    update :: (using brain : *NPC_Brain, delta_time : float32) {
         if state == {
             case .IDLE; {
                 if wait_time > 0 then wait_time -= delta_time;
@@ -139,3 +148,31 @@ NPC_Brain :: struct {
         Character.update(char, delta_time);
     }
 }
+
+Enemy_Brain :: struct {
+    char : *Character;
+    SPEED :: 3.0;
+    state : enum {
+        IDLE;
+        AGGROED;
+    } = .IDLE;
+    AGGRO_DISTANCE :: 10.0;
+
+    update :: (using brain : *Enemy_Brain, player : *Character, delta_time : float32) {
+        if state == {
+            case .IDLE;
+            if Math.distance(char.pos, player.pos) <= AGGRO_DISTANCE {
+                state = .AGGROED;
+            }
+            case .AGGROED;
+            if Math.distance(char.pos, player.pos) >= 2.0 * AGGRO_DISTANCE {
+                state = .IDLE;
+            } else {
+                dir := Math.unit_vector(player.pos - char.pos);
+                Character.translate_and_animate(char, dir * SPEED * delta_time);
+            }
+        } 
+    }
+
+}
+

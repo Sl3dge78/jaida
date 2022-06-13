@@ -3,6 +3,47 @@ Compiler :: #import "Compiler";
 
 #run build();
 
+// @TODO Make a bug report. Notes aren't specified in the typechecking of the structs.
+
+component_list : [..]*Compiler.Code_Struct;
+once := false;
+
+handle_components :: (message : *Compiler.Message) {
+    using Compiler;
+    if message.kind == .TYPECHECKED {
+        tc := cast(* Message_Typechecked) message;
+        for decl : tc.declarations {
+            if !decl.expression.expression || decl.expression.expression.kind != .STRUCT continue;
+            for note: decl.expression.notes {
+                Basic.log("%", note.text);
+                if note.text == "Component" {
+                    Basic.array_add(*component_list, cast(*Compiler.Code_Struct)decl.expression.expression);
+                    Basic.log("Found a component!");
+                }
+            }
+        }
+    }
+
+    if message.kind == .PHASE {
+        phase := cast(*Message_Phase)message;
+        if phase.phase == .TYPECHECKED_ALL_WE_CAN {
+            if !once {
+                builder : Basic.String_Builder;
+                Basic.print_to_builder(*builder, "COMPONENT_COUNT :: %;\n", component_list.count);
+
+                Basic.print_to_builder(*builder, "COMPONENT_LIST :: Type.[");
+                for component_list {
+                    Basic.print_to_builder(*builder, "%, ", it.defined_type.name);
+                }
+                Basic.print_to_builder(*builder, "];");
+                // @TODO is_component
+                add_build_string(Basic.builder_to_string(*builder), message.workspace);
+                once = true;
+            }
+        }
+    }
+}
+
 build :: () {
     w := Compiler.compiler_create_workspace("Zelda");
     
@@ -37,6 +78,7 @@ build :: () {
         if is_lsp {
             lsp_message(message);
         }
+        handle_components(message);
 
         if message.kind == .COMPLETE break;
     }   

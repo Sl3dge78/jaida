@@ -16,13 +16,14 @@ Game :: struct {
 
     blue_samurai_texture : Renderer.Texture;
     red_samurai_texture : Renderer.Texture;
+    katana_texture : Renderer.Texture;
 
-    player : Character;
+    player : Entity;
     player_brain : Player_Brain;
 
-    all_characters : [..]Character;
-    active_characters : [..]*Character;
-    inactive_characters : [..]*Character;
+    all_characters : [..]Entity;
+    active_characters : [..]*Entity;
+    inactive_characters : [..]*Entity;
     npc_brains : [..]NPC_Brain;
     enemy_brains : [..]Enemy_Brain;
 
@@ -31,10 +32,11 @@ Game :: struct {
 
         Renderer.load_texture(*blue_samurai_texture, "res/blue_samurai.png");
         Renderer.load_texture(*red_samurai_texture, "res/red_samurai.png");
+        Renderer.load_texture(*katana_texture, "res/katana.png");
         Renderer.load_texture(*map_texture, "res/world.png");
-        player = Character.init(tag = .PLAYER, sprite_sheet = blue_samurai_texture);
-        Basic.array_add(*all_characters, Character.init(tag = .NPC, sprite_sheet = blue_samurai_texture));
-        Basic.array_add(*all_characters, Character.init(tag = .ENEMY, pos = .{2, 2}, sprite_sheet = red_samurai_texture));
+        player = Entity.init(type = .PLAYER, sprite_sheet = blue_samurai_texture);
+        Basic.array_add(*all_characters, Entity.init(type = .NPC, sprite_sheet = blue_samurai_texture));
+        Basic.array_add(*all_characters, Entity.init(type = .ENEMY, pos = .{2, 2}, sprite_sheet = red_samurai_texture));
         request_map_change(current_map, player.world_pos);
     }
 
@@ -76,9 +78,9 @@ Game :: struct {
         layer_separator(1);
 
         // Player
-        Character.draw(*game.player);
+        Entity.draw(*game.player);
         for game.active_characters {
-            Character.draw(it);
+            Entity.draw(it);
         }
 
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
@@ -103,7 +105,7 @@ Game :: struct {
             if it.world_pos == map_pos {
                 char := *context.game.all_characters[it_index];
                 Basic.array_add(*context.game.active_characters, char);
-                if char.tag == {
+                if char.type == {
                     case .NPC; 
                         brain := Basic.array_add(*context.game.npc_brains);
                         brain.char = char;

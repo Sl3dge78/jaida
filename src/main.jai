@@ -13,6 +13,7 @@ Renderer :: #import "Renderer";
 Input :: #import "sInput";
 
 #load "game.jai";
+#load "components.jai";
 #load "keymaps.jai";
 #load "sprite.jai";
 #load "map.jai";
@@ -54,6 +55,13 @@ main :: () {
     SDL_GetWindowSize(window, *game_state.screen_width, *game_state.screen_height);
 
     Game.load();
+
+    Basic.log("Sprite: %", Components_Manager.get_component_id(Sprite));
+    Basic.log("Entity_: %", Components_Manager.get_component_id(Entity_));
+    Basic.log("Sprite: %", Components_Manager.get_component_id(Sprite));
+    for COMPONENT_LIST {
+        Basic.log("%", it);
+    }
 
     quit := false;
     last_time := Basic.get_time();

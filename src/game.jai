@@ -19,6 +19,7 @@ Game :: struct {
     katana_texture : Renderer.Texture;
 
     player : Entity;
+    player_ : Entity_;
     player_brain : Player_Brain;
 
     all_characters : [..]Entity;
@@ -38,6 +39,14 @@ Game :: struct {
         Basic.array_add(*all_characters, Entity.init(type = .NPC, sprite_sheet = blue_samurai_texture));
         Basic.array_add(*all_characters, Entity.init(type = .ENEMY, pos = .{2, 2}, sprite_sheet = red_samurai_texture));
         request_map_change(current_map, player.world_pos);
+
+        sprite := Entity_.add_component(*player_, Sprite);
+        sprite.sprite_sheet = blue_samurai_texture;
+
+        xform := Entity_.add_component(*player_, Transform);
+        xform.pos = .{20, 11};
+
+        Entity_.add_component(*player_, Animation);
     }
 
     update :: (delta_time : float32) {
@@ -52,6 +61,10 @@ Game :: struct {
             for * game.enemy_brains {
                 Enemy_Brain.update(it, *game.player, delta_time);
             }
+
+            Component_Manager.update_all_components(delta_time);
+
+
         } else if game.state == .EDITOR {
             Editor.update();
         }
@@ -76,6 +89,8 @@ Game :: struct {
         layer_separator(0);
         Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(1);
+
+        Component_Manager.draw_all_components();
 
         // Player
         Entity.draw(*game.player);

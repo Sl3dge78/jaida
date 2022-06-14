@@ -6,6 +6,8 @@ Compiler :: #import "Compiler";
 // @TODO Make a bug report. Notes aren't specified in the typechecking of the structs.
 
 component_list : [..]*Compiler.Code_Struct;
+update_component_list : [..]*Compiler.Code_Struct;
+draw_component_list : [..]*Compiler.Code_Struct;
 once := false;
 
 handle_components :: (message : *Compiler.Message) {
@@ -15,10 +17,14 @@ handle_components :: (message : *Compiler.Message) {
         for decl : tc.declarations {
             if !decl.expression.expression || decl.expression.expression.kind != .STRUCT continue;
             for note: decl.expression.notes {
-                Basic.log("%", note.text);
                 if note.text == "Component" {
                     Basic.array_add(*component_list, cast(*Compiler.Code_Struct)decl.expression.expression);
-                    Basic.log("Found a component!");
+                }
+                if note.text == "Update" {
+                    Basic.array_add(*update_component_list, cast(*Compiler.Code_Struct)decl.expression.expression);
+                }
+                if note.text == "Draw" {
+                    Basic.array_add(*draw_component_list, cast(*Compiler.Code_Struct)decl.expression.expression);
                 }
             }
         }
@@ -35,8 +41,19 @@ handle_components :: (message : *Compiler.Message) {
                 for component_list {
                     Basic.print_to_builder(*builder, "%, ", it.defined_type.name);
                 }
-                Basic.print_to_builder(*builder, "];");
-                // @TODO is_component
+                Basic.print_to_builder(*builder, "];\n");
+
+                Basic.print_to_builder(*builder, "UPDATE_COMPONENT_LIST :: Type.[");
+                for update_component_list {
+                    Basic.print_to_builder(*builder, "%, ", it.defined_type.name);
+                }
+                Basic.print_to_builder(*builder, "];\n");
+
+                Basic.print_to_builder(*builder, "DRAW_COMPONENT_LIST :: Type.[");
+                for draw_component_list {
+                    Basic.print_to_builder(*builder, "%, ", it.defined_type.name);
+                }
+                Basic.print_to_builder(*builder, "];\n");
                 add_build_string(Basic.builder_to_string(*builder), message.workspace);
                 once = true;
             }

@@ -1,5 +1,4 @@
 Entity :: struct {
-
     Type :: enum {
         PLAYER;
         NPC;

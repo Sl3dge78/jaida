@@ -78,7 +78,7 @@ Map :: struct {
         y : int = xx ((pos.y + cam.y) * TILE_SIZE * ZOOM);
         return x, y;
     }
-
+    
     screen_to_map :: inline (cam : Vector2, x : int, y : int) -> Vector2 {
         result := xy(xx x, xx y);
         result /= cast(float32)(TILE_SIZE * ZOOM);

@@ -47,12 +47,14 @@ Game :: struct {
         xform.pos = .{20, 11};
 
         Entity_.add_component(*player_, Animation);
+        Entity_.add_component(*player_, Velocity);
+        Entity_.add_component(*player_, Player);
     }
 
     update :: (delta_time : float32) {
         game := *context.game;
         if game.state == .GAME {
-            Player_Brain.update(*game.player_brain, *game.player, delta_time);
+            // Player_Brain.update(*game.player_brain, *game.player, delta_time);
 
             // @Speed : Easy to multithread
             for * game.npc_brains {
@@ -93,7 +95,9 @@ Game :: struct {
         Component_Manager.draw_all_components();
 
         // Player
+        /*
         Entity.draw(*game.player);
+        */
         for game.active_characters {
             Entity.draw(it);
         }

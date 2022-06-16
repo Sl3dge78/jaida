@@ -2,6 +2,8 @@ Basic :: #import "Basic";
 String :: #import "String";
 Math :: #import "Math";
 Random :: #import "Random";
+B_Array :: #import "Bucket_Array";
+
 using Math; // To import operator overloading
 libc :: #foreign_system_library "libm";
 round :: (val : float32) -> float32 #foreign libc "roundf";
@@ -14,12 +16,13 @@ Renderer :: #import "Renderer";
 Input :: #import "sInput";
 
 #load "game.jai";
+#load "ecs.jai";
 #load "components.jai";
 #load "keymaps.jai";
 #load "sprite.jai";
 #load "map.jai";
 #load "editor.jai";
-#load "character.jai";
+// #load "character.jai";
 
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;
@@ -99,6 +102,7 @@ main :: () {
         Game.draw();
 
         Renderer.swap_buffers(window);
+        Component_Manager.cleanup();
         Basic.reset_temporary_storage();
     }
 }

@@ -206,7 +206,6 @@ Enemy_Brain :: struct {
     }
 }
 
-
 Projectile_Brain :: struct {
     entity : *Entity;
     time_alive : float;
@@ -217,3 +216,36 @@ Projectile_Brain :: struct {
 
     }
 }
+
+// LEGACY
+
+    request_map_change :: (current_map : Map, map_pos : Vector2) -> bool {
+
+        success := Map.load(current_map, map_pos);
+
+        if !success return false;
+        
+        Basic.array_reset_keeping_memory(*context.game.active_characters);
+        Basic.array_reset_keeping_memory(*context.game.inactive_characters);
+        Basic.array_reset_keeping_memory(*context.game.npc_brains);
+        Basic.array_reset_keeping_memory(*context.game.enemy_brains);
+
+        for context.game.all_characters {
+            if it.world_pos == map_pos {
+                char := *context.game.all_characters[it_index];
+                Basic.array_add(*context.game.active_characters, char);
+                if char.type == {
+                    case .NPC; 
+                        brain := Basic.array_add(*context.game.npc_brains);
+                        brain.char = char;
+                    case .ENEMY;
+                        brain := Basic.array_add(*context.game.enemy_brains); 
+                        brain.char = char;
+                }
+            } else {
+                Basic.array_add(*context.game.inactive_characters, *context.game.all_characters[it_index]);
+            }
+        }
+
+        return true;
+    }

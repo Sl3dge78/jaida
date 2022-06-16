@@ -18,15 +18,7 @@ Game :: struct {
     red_samurai_texture : Renderer.Texture;
     katana_texture : Renderer.Texture;
 
-    player : Entity;
-    player_ : Entity_;
-    player_brain : Player_Brain;
-
-    all_characters : [..]Entity;
-    active_characters : [..]*Entity;
-    inactive_characters : [..]*Entity;
-    npc_brains : [..]NPC_Brain;
-    enemy_brains : [..]Enemy_Brain;
+    player : *Entity;
 
     load :: () {
         using context.game;
@@ -35,38 +27,44 @@ Game :: struct {
         Renderer.load_texture(*red_samurai_texture, "res/red_samurai.png");
         Renderer.load_texture(*katana_texture, "res/katana.png");
         Renderer.load_texture(*map_texture, "res/world.png");
-        player = Entity.init(type = .PLAYER, sprite_sheet = blue_samurai_texture);
-        Basic.array_add(*all_characters, Entity.init(type = .NPC, sprite_sheet = blue_samurai_texture));
-        Basic.array_add(*all_characters, Entity.init(type = .ENEMY, pos = .{2, 2}, sprite_sheet = red_samurai_texture));
-        request_map_change(current_map, player.world_pos);
-
-        sprite := Entity_.add_component(*player_, Sprite);
+        
+        Basic.log("Sprite : %", Component_Manager.get_component_id(Sprite));
+        // Create player
+        {
+        player = Entity.create();
+        player.tag = .PLAYER;
+        sprite := Entity.add_component(player, Sprite);
         sprite.sprite_sheet = blue_samurai_texture;
 
-        xform := Entity_.add_component(*player_, Transform);
+        xform := Entity.add_component(player, Transform);
         xform.pos = .{20, 11};
+        Entity.add_component(player, Animation);
+        Entity.add_component(player, Velocity);
+        Entity.add_component(player, Player);
+        request_map_change(current_map, xform.world_pos);
+        for player.components {
+            Basic.log("%: %", it_index, it);
+        }
+        }
+        Basic.log("Sprite : %", Component_Manager.get_component_id(Sprite));
 
-        Entity_.add_component(*player_, Animation);
-        Entity_.add_component(*player_, Velocity);
-        Entity_.add_component(*player_, Player);
+        {
+        e := Entity.create();
+        sprite := Entity.add_component(e, Sprite);
+        sprite.sprite_sheet = red_samurai_texture;
+        xform := Entity.add_component(e, Transform);
+        xform.pos.x = Random.random_get_zero_to_one() * MAP_WIDTH;
+        xform.pos.y = Random.random_get_zero_to_one() * MAP_HEIGHT;
+        Entity.add_component(e, NPC_Move);
+        Entity.add_component(e, Velocity);
+        Entity.add_component(e, Animation);
+        }
     }
 
     update :: (delta_time : float32) {
         game := *context.game;
         if game.state == .GAME {
-            // Player_Brain.update(*game.player_brain, *game.player, delta_time);
-
-            // @Speed : Easy to multithread
-            for * game.npc_brains {
-                NPC_Brain.update(it, delta_time);
-            }
-            for * game.enemy_brains {
-                Enemy_Brain.update(it, *game.player, delta_time);
-            }
-
-            Component_Manager.update_all_components(delta_time);
-
-
+            Component_Manager.update_components(delta_time);
         } else if game.state == .EDITOR {
             Editor.update();
         }
@@ -92,16 +90,9 @@ Game :: struct {
         Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(1);
 
-        Component_Manager.draw_all_components();
+        Component_Manager.draw_components();
 
         // Player
-        /*
-        Entity.draw(*game.player);
-        */
-        for game.active_characters {
-            Entity.draw(it);
-        }
-
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
 
         if game.state == .EDITOR {
@@ -110,33 +101,21 @@ Game :: struct {
     }
 
     request_map_change :: (current_map : Map, map_pos : Vector2) -> bool {
-
         success := Map.load(current_map, map_pos);
 
-        if !success return false;
-        
-        Basic.array_reset_keeping_memory(*context.game.active_characters);
-        Basic.array_reset_keeping_memory(*context.game.inactive_characters);
-        Basic.array_reset_keeping_memory(*context.game.npc_brains);
-        Basic.array_reset_keeping_memory(*context.game.enemy_brains);
-
-        for context.game.all_characters {
-            if it.world_pos == map_pos {
-                char := *context.game.all_characters[it_index];
-                Basic.array_add(*context.game.active_characters, char);
-                if char.type == {
-                    case .NPC; 
-                        brain := Basic.array_add(*context.game.npc_brains);
-                        brain.char = char;
-                    case .ENEMY;
-                        brain := Basic.array_add(*context.game.enemy_brains); 
-                        brain.char = char;
+        for * all_entities {
+            xform := Entity.get_component(it, Transform);
+            if xform {
+                if xform.world_pos == map_pos && it.inactive {
+                    it.request_active_state_toggle = true;
                 }
-            } else {
-                Basic.array_add(*context.game.inactive_characters, *context.game.all_characters[it_index]);
+                if !it.inactive && xform.world_pos != map_pos {
+                    it.request_active_state_toggle = true;
+                }
             }
         }
 
+        if !success return false;
         return true;
     }
 

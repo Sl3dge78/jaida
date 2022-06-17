@@ -1,4 +1,31 @@
 
+Vector2i :: struct {
+    x : s32;
+    y : s32;
+}
+
+operator == :: (a: Vector2i, b: Vector2i) -> bool {
+    return a.x == b.x && a.y == b.y;
+}
+
+operator + :: (a: Vector2i, b: Vector2i) -> Vector2i {
+    result := a;
+    result.x += b.x;
+    result.y += b.y;
+    return result;
+}
+
+operator - :: (a: Vector2i, b: Vector2i) -> Vector2i {
+    result := a;
+    result.x -= b.x;
+    result.y -= b.y;
+    return result;
+}
+
+length :: (v: Vector2i) -> float {
+    return sqrt(cast(float)(v.x * v.x + v.y * v.y));
+}
+
 Game :: struct {
     State :: enum {
         GAME;
@@ -10,6 +37,7 @@ Game :: struct {
     screen_height : s32;
 
     current_map : Map;
+    current_world_pos : Vector2i;
     map_texture : Renderer.Texture;
     
     camera_position : Vector2 = .{0.5, 0.75};
@@ -23,6 +51,8 @@ Game :: struct {
     load :: () {
         using context.game;
 
+        Random.random_seed(SDL_GetPerformanceCounter());
+
         Renderer.load_texture(*blue_samurai_texture, "res/blue_samurai.png");
         Renderer.load_texture(*red_samurai_texture, "res/red_samurai.png");
         Renderer.load_texture(*katana_texture, "res/katana.png");
@@ -31,31 +61,22 @@ Game :: struct {
         Basic.log("Sprite : %", Component_Manager.get_component_id(Sprite));
         // Create player
         {
-        player = Entity.create();
-        player.tag = .PLAYER;
-        sprite := Entity.add_component(player, Sprite);
-        sprite.sprite_sheet = blue_samurai_texture;
+            player = Entity.create();
+            player.tag = .PLAYER;
+            sprite := Entity.add_component(player, Sprite);
+            sprite.sprite_sheet = blue_samurai_texture;
 
-        xform := Entity.add_component(player, Transform.{pos = .{20, 11}});
-        Entity.add_component(player, Animation);
-        Entity.add_component(player, Velocity);
-        Entity.add_component(player, Player);
-        Entity.add_component(player, Hitbox.{tag = .PLAYER});
-        request_map_change(current_map, xform.world_pos);
+            xform := Entity.add_component(player, Transform.{pos = .{20, 11}});
+            Entity.add_component(player, Animation);
+            Entity.add_component(player, Velocity);
+            Entity.add_component(player, Player);
+            Entity.add_component(player, Health);
+            Entity.add_component(player, Hitbox.{tag = .PLAYER});
+            request_map_change(current_map, xform.world_pos);
         }
 
-        {
-        e := Entity.create();
-        sprite := Entity.add_component(e, Sprite);
-        sprite.sprite_sheet = red_samurai_texture;
-        xform := Entity.add_component(e, Transform);
-        xform.pos.x = Random.random_get_zero_to_one() * MAP_WIDTH;
-        xform.pos.y = Random.random_get_zero_to_one() * MAP_HEIGHT;
-        Entity.add_component(e, NPC_Move);
-        Entity.add_component(e, Velocity);
-        Entity.add_component(e, Animation);
-        Entity.add_component(e, Hitbox.{tag = .ENEMY});
-        }
+        create_enemy();
+
     }
 
     update :: (delta_time : float32) {
@@ -97,8 +118,9 @@ Game :: struct {
         }
     }
 
-    request_map_change :: (current_map : Map, map_pos : Vector2) -> bool {
+    request_map_change :: (current_map : Map, map_pos : Vector2i) -> bool {
         success := Map.load(current_map, map_pos);
+        context.game.current_world_pos = map_pos;
 
         for * all_entities {
             xform := Entity.get_component(it, Transform);
@@ -143,6 +165,40 @@ Game :: struct {
 
     rect_intersects :: (a0 : Vector2, a1 : Vector2, b0 : Vector2, b1 : Vector2) -> bool {
         return a0.x < b1.x && a1.x > b0.x && a0.y < b1.y && a1.y > b0.y;
+    }
+
+    create_enemy :: () {
+        e := Entity.create();
+        sprite := Entity.add_component(e, Sprite);
+        sprite.sprite_sheet = context.game.red_samurai_texture;
+        xform := Entity.add_component(e, Transform);
+        xform.pos.x = Random.random_get_within_range(0, MAP_WIDTH);
+        xform.pos.y = Random.random_get_within_range(0, MAP_HEIGHT);
+        xform.world_pos = context.game.current_world_pos;
+        Entity.add_component(e, Enemy);
+        Entity.add_component(e, Velocity);
+        Entity.add_component(e, Animation);
+        Entity.add_component(e, Hitbox.{tag = .ENEMY});
+        Entity.add_component(e, Health);
+    }
+
+    create_weapon :: (parent : *Entity, tag : Entity.Tag, time : float) -> *Entity {
+        weapon := Entity.create();
+        xform := Entity.get_component(parent, Transform);
+        w_xform := Entity.add_component(weapon, Transform);
+        Component.copy(xform, w_xform);
+        w_xform.pos += forward(w_xform.direction);
+
+        sprite := Entity.add_component(weapon, Sprite);
+        sprite.sprite_sheet = context.game.katana_texture;
+
+        hitbox := Entity.add_component(weapon, Hitbox);
+        hitbox.look_for = tag;
+        hitbox.p0.x = -0.4;
+        hitbox.p1.x = 0;
+        autokill := Entity.add_component(weapon, AutoKill);
+        autokill.time = time;
+        return weapon;
     }
 }
 

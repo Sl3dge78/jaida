@@ -33,19 +33,19 @@ Map :: struct {
     }
 
     // Allocates a temporary string
-    get_map_file_name :: (world_pos : Vector2) -> string {
+    get_map_file_name :: (world_pos : Vector2i) -> string {
         pos_fmt := Basic.tprint("res/maps/%_%.map", cast(int)world_pos.x, cast(int)world_pos.y);
         return pos_fmt;
     }
 
-    save :: (using map : Map, world_pos : Vector2) {
+    save :: (using map : Map, world_pos : Vector2i) {
         if !File.write_entire_file(get_map_file_name(world_pos), tiles.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(tiles[0][0]))){
             Basic.log_error("Unable to save map!");
         }
         Basic.log("Saved!");
     }
 
-    load :: (using map : Map, world_pos : Vector2) -> bool {
+    load :: (using map : Map, world_pos : Vector2i) -> bool {
         map_file, success := File.file_open(get_map_file_name(world_pos));
         if !success {
             Basic.log_error("Unable to open map file!");
@@ -58,7 +58,7 @@ Map :: struct {
     }
 
     // @Speed : This is kind of dumb
-    exists :: (world_pos : Vector2) -> bool {
+    exists :: (world_pos : Vector2i) -> bool {
         map_file, success := File.file_open(get_map_file_name(world_pos));
         if success then File.file_close(*map_file);
         return success;

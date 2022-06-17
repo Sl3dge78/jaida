@@ -102,7 +102,7 @@ Editor :: struct {
         if down Map.load(context.game.current_map, Entity.get_component(context.game.player, Transform).world_pos);
     }
 
-    change_or_create_map :: (map : Map, pos : Vector2) {
+    change_or_create_map :: (map : Map, pos : Vector2i) {
         if Map.exists(pos) {
             Game.request_map_change(map, pos);
         } else {

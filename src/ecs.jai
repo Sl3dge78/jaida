@@ -30,15 +30,15 @@ Entity :: struct {
             return Basic.builder_to_string(*builder);
         };
 
-        for all_entities {
-            if *it == entity {
+        for * all_entities {
+            if it == entity {
                 remove it;
                 return;
             }
         }
     }
 
-    get_first :: (tag : Tag) -> *Entity {
+    find_first :: (tag : Tag) -> *Entity {
         for * all_entities {
             if it.tag == tag return it;
         }
@@ -95,6 +95,8 @@ Entity :: struct {
     }
 
     change_inactive :: (entity : *Entity, $$inactive : bool) {
+        if entity.inactive == inactive return;
+
         #if is_constant(inactive) {
             #insert #run -> string {
                 builder : Basic.String_Builder;

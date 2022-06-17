@@ -2,13 +2,10 @@
 # In-Progress 
 
 # Inbox 
+- [ ] Pathfinding
 - [ ] Save characters in maps
-- [ ] Enemy AI 2.0
-    - [ ] Pathfinding
-    - [ ] Attack patterns
 
 ## System
-- [ ] Combat 1.0
 - [ ] Interiors ( = maps that aren't on the main map, in the negatives?)
 - [ ] Puzzles (push blocks?)
 - [ ] Dialogs
@@ -19,13 +16,15 @@
     - [ ] Puzzles
 
 # Later
-- [ ] Multithread brains
 - [ ] (Collision) Allow definition of a custom collision box, for some tiles.
 
 # Done
+- [X] Combat 1.0
 - [X] Animations
 - [X] Multiple maps
 - [X] Enemies
     - [X] Follow AI
 - [X] NPC
     - [X] Walks random
+- [X] Enemy AI 2.0
+    - [X] Attack patterns

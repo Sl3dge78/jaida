@@ -36,17 +36,13 @@ Game :: struct {
         sprite := Entity.add_component(player, Sprite);
         sprite.sprite_sheet = blue_samurai_texture;
 
-        xform := Entity.add_component(player, Transform);
-        xform.pos = .{20, 11};
+        xform := Entity.add_component(player, Transform.{pos = .{20, 11}});
         Entity.add_component(player, Animation);
         Entity.add_component(player, Velocity);
         Entity.add_component(player, Player);
+        Entity.add_component(player, Hitbox.{tag = .PLAYER});
         request_map_change(current_map, xform.world_pos);
-        for player.components {
-            Basic.log("%: %", it_index, it);
         }
-        }
-        Basic.log("Sprite : %", Component_Manager.get_component_id(Sprite));
 
         {
         e := Entity.create();
@@ -58,6 +54,7 @@ Game :: struct {
         Entity.add_component(e, NPC_Move);
         Entity.add_component(e, Velocity);
         Entity.add_component(e, Animation);
+        Entity.add_component(e, Hitbox.{tag = .ENEMY});
         }
     }
 
@@ -142,6 +139,10 @@ Game :: struct {
         }
 
         return result;
+    }
+
+    rect_intersects :: (a0 : Vector2, a1 : Vector2, b0 : Vector2, b1 : Vector2) -> bool {
+        return a0.x < b1.x && a1.x > b0.x && a0.y < b1.y && a1.y > b0.y;
     }
 }
 

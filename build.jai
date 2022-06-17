@@ -62,7 +62,7 @@ handle_components :: (message : *Compiler.Message) {
 }
 
 build :: () {
-    w := Compiler.compiler_create_workspace("Zelda");
+    w := Compiler.compiler_create_workspace("zelda");
     
     options := Compiler.get_build_options();
     options.output_executable_name = "out";

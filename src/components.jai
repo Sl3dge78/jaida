@@ -5,6 +5,13 @@ Component :: struct {
     require_component :: ($component : Type) #expand {
         Basic.assert(Entity.has_component(`entity, component));
     }
+
+    // @Speed, do a memcpy?
+    copy :: (from : * $T/Component, to : *T) {
+        o := to.component;
+        << to = << from;
+        to.component = o;
+    }
 }
 
 Sprite :: struct {
@@ -48,45 +55,46 @@ Transform :: struct {
     world_pos : Vector2;
 
     update :: (using xform: *Transform, delta_time : float) {
-        Component.require_component(Velocity);
         vel := Entity.get_component(entity, Velocity);
-        final_vel := Game.move_and_slide(pos, vel.vel, context.game.current_map);
-        xform.pos += final_vel;
+        if vel {
+            final_vel := Game.move_and_slide(pos, vel.vel, context.game.current_map);
+            xform.pos += final_vel;
 
-        if length(final_vel) > 0 {
-            anim := Entity.get_component(entity, Animation);
+            if length(final_vel) > 0 {
+                anim := Entity.get_component(entity, Animation);
 
-            if final_vel.x > 0 then xform.direction = Direction.EAST;
-            if final_vel.x < 0 then xform.direction = Direction.WEST;
-            if final_vel.y > 0 then xform.direction = Direction.NORTH;
-            if final_vel.y < 0 then xform.direction = Direction.SOUTH;
+                if final_vel.x > 0 then xform.direction = Direction.EAST;
+                if final_vel.x < 0 then xform.direction = Direction.WEST;
+                if final_vel.y > 0 then xform.direction = Direction.NORTH;
+                if final_vel.y < 0 then xform.direction = Direction.SOUTH;
 
-            // World movement
-            world_movement : Vector2;
-            new_pos := xform.pos;
-            if xform.pos.x < 0 {
-                world_movement -= Vector2.{1, 0};
-                new_pos.x = MAP_WIDTH - 1;
-            }
-            if xform.pos.x > MAP_WIDTH - 1 {
-                world_movement += Vector2.{1, 0};
-                new_pos.x = 0;
-            }
-            if xform.pos.y < 0.1 {
-                world_movement -= Vector2.{0, 1};
-                new_pos.y = MAP_HEIGHT - 1.1;
-            }
-            if xform.pos.y > MAP_HEIGHT - 1 {
-                world_movement += Vector2.{0, 1};
-                new_pos.y = 0.1;
-            }
-            if Math.length(world_movement) > 0 {
-                if Map.exists(xform.world_pos + world_movement) {
-                    xform.world_pos += world_movement;
-                    if Entity.has_component(entity, Player) {
-                        Game.request_map_change(context.game.current_map, xform.world_pos);
+                // World movement
+                world_movement : Vector2;
+                new_pos := xform.pos;
+                if xform.pos.x < 0 {
+                    world_movement -= Vector2.{1, 0};
+                    new_pos.x = MAP_WIDTH - 1;
+                }
+                if xform.pos.x > MAP_WIDTH - 1 {
+                    world_movement += Vector2.{1, 0};
+                    new_pos.x = 0;
+                }
+                if xform.pos.y < 0.1 {
+                    world_movement -= Vector2.{0, 1};
+                    new_pos.y = MAP_HEIGHT - 1.1;
+                }
+                if xform.pos.y > MAP_HEIGHT - 1 {
+                    world_movement += Vector2.{0, 1};
+                    new_pos.y = 0.1;
+                }
+                if Math.length(world_movement) > 0 {
+                    if Map.exists(xform.world_pos + world_movement) {
+                        xform.world_pos += world_movement;
+                        if Entity.has_component(entity, Player) {
+                            Game.request_map_change(context.game.current_map, xform.world_pos);
+                        }
+                        xform.pos = new_pos;
                     }
-                    xform.pos = new_pos;
                 }
             }
         }
@@ -133,48 +141,39 @@ Velocity :: struct {
     vel : Vector2;
 } @Component
 
-Player :: struct {
+Health :: struct {
     using component : Component;
-    SPEED :: 5.0;
+    hp : u32 = 4;
+} @Component
 
-    state : enum {
-        IDLE;
-        ATTACKING;
-    };
-    attack_time : float;
-
-    update :: (using player : *Player, delta_time : float) {
-        Component.require_component(Velocity);
-        velocity := Entity.get_component(entity, Velocity);
-        if state != .ATTACKING {
-            // Movement
-            player_vel : Vector2;
-            if Input.get_keyboard(SDL_SCANCODE_W) then player_vel.y += 1;         
-            if Input.get_keyboard(SDL_SCANCODE_A) then player_vel.x -= 1;
-            if Input.get_keyboard(SDL_SCANCODE_S) then player_vel.y -= 1; 
-            if Input.get_keyboard(SDL_SCANCODE_D) then player_vel.x += 1; 
-            norm_vel := Math.unit_vector(player_vel) * (delta_time * SPEED);
-            velocity.vel = norm_vel;
-
-            // Attack
-            if Input.pressed_this_frame(SDL_SCANCODE_SPACE) {
-                state = .ATTACKING;
-                attack_time = 0.2;
-            }
-        } else {
-            velocity.vel = .{0, 0};
-            attack_time -= delta_time;
-            if attack_time <= 0 then state = .IDLE;
-        }
-    }
-} @Component @Update
 
 Hitbox :: struct {
     using component : Component;
+    p0 := Vector2.{-0.5, -0.5}; // Relative to the current center in the transform
+    p1 := Vector2.{ 0.5,  0.5};
 
-    p0 : Vector2;
-    p1 : Vector2;
-} @Component 
+    tag: Entity.Tag = .NONE;     // Will be looked at by hitboxes. Used to receive 
+    look_for : Entity.Tag = .NONE; // What kind of hitboxes to search. Used to give
+
+    update :: (using comp : *Hitbox, delta_time : float) {
+        if look_for == .NONE then return;
+        Component.require_component(Transform);
+        xform := Entity.get_component(entity, Transform);
+
+        others := Component_Manager.get_component_storage(Hitbox, false);
+        for others {
+            if it.tag != look_for then continue;
+            other_xform := Entity.get_component(it.entity, Transform);
+            if Game.rect_intersects(p0 + xform.pos, p1 + xform.pos, it.p0 + other_xform.pos, it.p1 + other_xform.pos) {
+                Basic.log("Hit!");
+                hp := Entity.get_component(it.entity, Health);
+                if hp {
+                    hp.hp -= 1;
+                }
+            }
+        }
+    }
+} @Component @Update
 
 AutoKill :: struct {
     using component : Component;
@@ -228,3 +227,49 @@ NPC_Move :: struct {
     }
 } @Component @Update
 
+Player :: struct {
+    using component : Component;
+    SPEED :: 5.0;
+
+    state : enum {
+        IDLE;
+        ATTACKING;
+    };
+    attack_time : float;
+
+    update :: (using player : *Player, delta_time : float) {
+        Component.require_component(Velocity);
+        velocity := Entity.get_component(entity, Velocity);
+        if state != .ATTACKING {
+            // Movement
+            player_vel : Vector2;
+            if Input.get_keyboard(SDL_SCANCODE_W) then player_vel.y += 1;         
+            if Input.get_keyboard(SDL_SCANCODE_A) then player_vel.x -= 1;
+            if Input.get_keyboard(SDL_SCANCODE_S) then player_vel.y -= 1; 
+            if Input.get_keyboard(SDL_SCANCODE_D) then player_vel.x += 1; 
+            norm_vel := Math.unit_vector(player_vel) * (delta_time * SPEED);
+            velocity.vel = norm_vel;
+
+            // Attack
+            if Input.pressed_this_frame(SDL_SCANCODE_SPACE) {
+                state = .ATTACKING;
+                attack_time = 0.2;
+                weapon := Entity.create();
+                xform := Entity.get_component(entity, Transform);
+                w_xform := Entity.add_component(weapon, Transform);
+                Component.copy(xform, w_xform);
+                w_xform.pos += forward(w_xform.direction);
+
+                sprite := Entity.add_component(weapon, Sprite);
+                sprite.sprite_sheet = context.game.katana_texture;
+
+                Entity.add_component(weapon, Hitbox.{look_for = .ENEMY});
+                Entity.add_component(weapon, AutoKill.{time = 0.2});
+            }
+        } else {
+            velocity.vel = .{0, 0};
+            attack_time -= delta_time;
+            if attack_time <= 0 then state = .IDLE;
+        }
+    }
+} @Component @Update

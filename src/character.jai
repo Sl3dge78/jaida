@@ -84,15 +84,6 @@ Entity :: struct {
         }
     }
 
-    forward :: (char : *Entity) -> Vector2 {
-        if char.direction == {
-            case .EAST; return .{1, 0};
-            case .WEST; return .{-1, 0};
-            case .NORTH; return .{0, 1};
-            case .SOUTH; return .{0, -1};
-        }
-        return .{0, 0};
-    }
 }
 
 Player_Brain :: struct {

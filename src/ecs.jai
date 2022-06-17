@@ -8,10 +8,10 @@ using B_Array;
 Entity :: struct {
     components : [COMPONENT_COUNT] *Component;
     Tag :: enum {
-        NONE;
-        PLAYER;
-        NPC;
-        ENEMY;
+        NONE :: 0;
+        PLAYER :: 1;
+        NPC :: 2;
+        ENEMY :: 4;
     };
     tag : Tag; 
     request_active_state_toggle : bool;
@@ -75,6 +75,12 @@ Entity :: struct {
         }
     }
 
+    add_component :: (entity : *Entity, component : $T/Component) -> *T {
+        comp := add_component(entity, T);
+        Component.copy(*component, comp);
+        return comp;
+    }
+
     has_component :: (entity : *Entity, $component : Type) -> bool {
         comp_id := Component_Manager.get_component_id(component); 
         return entity.components[comp_id] != null;
@@ -133,6 +139,7 @@ Component_Manager :: struct {
         return comp;
     }
 
+
     get_component_storage :: ($component : $T, $$inactive : bool) -> *Bucket_Array(component, 1) {
         #if is_constant(inactive) {
             #insert #run -> string {
@@ -176,7 +183,7 @@ Component_Manager :: struct {
     }
 
     assert_is_component :: ($component : Type) {
-        Basic.assert(Component_Manager.is_component(component), "% is not a component.", component);
+        // Basic.assert(Component_Manager.is_component(component), "% is not a component.", component);
     }
 
     update_components :: (delta_time : float, $inactive : bool = false) {
@@ -201,7 +208,9 @@ Component_Manager :: struct {
 
     change_inactive :: (component : *$T, $$inactive : bool) {
         new_comp := create_component(T, inactive);
+        loc := new_comp.loc;
         << new_comp = << component; // Copy
+        new_comp.loc = loc; // But keep the location intact!
         new_comp.entity.components[get_component_id(T)] = cast(*Component)new_comp;
 
         old_storage := get_component_storage(T, !inactive);

@@ -33,6 +33,16 @@ Direction :: enum u8 {
     NORTH :: 1;
     WEST :: 2;
     EAST :: 3;
+
+}
+
+forward :: (dir : Direction) -> Vector2 {
+    if #complete dir == { 
+        case .EAST; return .{1, 0};
+        case .WEST; return .{-1, 0};
+        case .NORTH; return .{0, 1};
+        case .SOUTH; return .{0, -1};
+    }
 }
 
 main :: () {

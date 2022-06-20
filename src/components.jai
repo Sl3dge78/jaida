@@ -91,7 +91,7 @@ Transform :: struct {
                     world_movement += Vector2i.{0, 1};
                     new_pos.y = 0.1;
                 }
-                if length(world_movement) > 0 {
+                if Vector2i.length(world_movement) > 0 {
                     if Map.exists(xform.world_pos + world_movement) {
                         xform.world_pos += world_movement;
                         xform.pos = new_pos;
@@ -332,7 +332,7 @@ Player :: struct {
                 Game.create_weapon(entity, .ENEMY, attack_time);
             }
             if Input.pressed_this_frame(SDL_SCANCODE_P) {
-                Game.create_enemy();
+                Basic.log("%", << Entity.get_component(entity, Transform));
             }
         } else {
             velocity.vel = .{0, 0};
@@ -408,3 +408,30 @@ Enemy :: struct {
     }
 } @Component @Update
 
+
+Teleporter :: struct {
+    using comp : Component;
+
+    new_world_pos : Vector2i;
+    new_pos : Vector2;
+
+    update :: (using c : *Teleporter, delta_time : float) {
+        player := context.game.player;
+        player_xform := Entity.get_component(player, Transform);
+        my_xform := Entity.get_component(entity, Transform);
+        
+        if Vector2i.from_vector2(player_xform.pos) == Vector2i.from_vector2(my_xform.pos) {
+            if player_xform.world_pos != new_world_pos {
+                player_xform.world_pos = new_world_pos; // @Hack
+                if Game.request_map_change(context.game.current_map, new_world_pos) {
+                    player_xform.pos = new_pos;
+                } else {
+                    // The map doesn't exist, to prevent checking every frame, delete ourselves.
+                    Entity.delete(entity);
+                }
+            } else {
+                player_xform.pos = new_pos;
+            }
+        }
+    }
+} @Component @Update

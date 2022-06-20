@@ -3,10 +3,11 @@
 
 # Inbox 
 - [ ] Pathfinding
-- [ ] Save characters in maps
+- [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
+- [ ] Have some components that update not every frame
+- [ ] Entities stay alive for 1 frame when changing map. Maybe do the map change at the end of the frame to prevent that?
 
 ## System
-- [ ] Interiors ( = maps that aren't on the main map, in the negatives?)
 - [ ] Puzzles (push blocks?)
 - [ ] Dialogs
 - [ ] (Collision) Detect them with NPCs
@@ -28,3 +29,4 @@
     - [X] Walks random
 - [X] Enemy AI 2.0
     - [X] Attack patterns
+- [X] Triggers that change maps

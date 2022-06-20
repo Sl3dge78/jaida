@@ -2,6 +2,17 @@
 Vector2i :: struct {
     x : s32;
     y : s32;
+
+    length :: (v: Vector2i) -> float {
+        return sqrt(cast(float)(v.x * v.x + v.y * v.y));
+    }
+
+    from_vector2 :: (v : Vector2) -> Vector2i {
+        result : Vector2i = ---;
+        result.x = xx round(v.x);
+        result.y = xx round(v.y);
+        return result;
+    }
 }
 
 operator == :: (a: Vector2i, b: Vector2i) -> bool {
@@ -22,9 +33,7 @@ operator - :: (a: Vector2i, b: Vector2i) -> Vector2i {
     return result;
 }
 
-length :: (v: Vector2i) -> float {
-    return sqrt(cast(float)(v.x * v.x + v.y * v.y));
-}
+
 
 Game :: struct {
     State :: enum {
@@ -76,7 +85,7 @@ Game :: struct {
         }
 
         create_enemy();
-
+        create_teleporter(.{13, 13}, .{14.5, 9}, .{-1, 0});
     }
 
     update :: (delta_time : float32) {
@@ -120,6 +129,7 @@ Game :: struct {
 
     request_map_change :: (current_map : Map, map_pos : Vector2i) -> bool {
         success := Map.load(current_map, map_pos);
+        if !success return false;
         context.game.current_world_pos = map_pos;
 
         for * all_entities {
@@ -134,8 +144,18 @@ Game :: struct {
             }
         }
 
-        if !success return false;
+        load_entities(map_pos);
+
         return true;
+    }
+
+
+    // @Temporary : Until we have entity loading.
+    load_entities :: (map_pos : Vector2i) {
+        if map_pos == .{-1, 0} { // Interior
+            create_teleporter(.{14, 8}, .{13, 12}, .{0, 0});
+            create_teleporter(.{15, 8}, .{13, 12}, .{0, 0});
+        }
     }
 
     /// Computes a new velocity that avoids map obstacles
@@ -199,6 +219,19 @@ Game :: struct {
         autokill := Entity.add_component(weapon, AutoKill);
         autokill.time = time;
         return weapon;
+    }
+
+    create_teleporter :: (pos : Vector2i, new_pos : Vector2, new_world_pos : Vector2i) -> *Entity {
+        tp := Entity.create();
+        
+        xform := Entity.add_component(tp, Transform);
+        xform.pos.x = xx pos.x;
+        xform.pos.y = xx pos.y;
+        xform.world_pos = context.game.current_world_pos;
+        comp := Entity.add_component(tp, Teleporter);
+        comp.new_pos = new_pos;
+        comp.new_world_pos = new_world_pos;
+        return tp;
     }
 }
 

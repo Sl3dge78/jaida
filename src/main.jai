@@ -109,10 +109,10 @@ main :: () {
         }
 
         Game.update(delta_time);
+        Component_Manager.cleanup();
         Game.draw();
 
         Renderer.swap_buffers(window);
-        Component_Manager.cleanup();
         Basic.reset_temporary_storage();
     }
 }

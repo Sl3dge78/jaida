@@ -22,7 +22,7 @@ Sprite :: struct {
     sprite_x : u32;
     sprite_y : u32;
 
-    update :: (using sprite : *Sprite, delta_time : float) {
+    draw :: (using sprite: *Sprite) {
         xform := Entity.get_component(entity, Transform);
         animation := Entity.get_component(entity, Animation);
         if animation {
@@ -33,21 +33,17 @@ Sprite :: struct {
                 case .WINDUP;    sprite_y = xx ifx (xform.direction == .SOUTH) then 5 else 3;
             }
         }
-
         if xform {
             x0, y0 = Map.map_to_screen(context.game.camera_position, xform.pos - Vector2.{0.5, 0.5});
             x1, y1 = Map.map_to_screen(context.game.camera_position, xform.pos + Vector2.{0.5, 0.5});
             sprite_x = xx xform.direction;
         }
-    }
-
-    draw :: (using sprite: *Sprite) {
         uv0, uv1 := get_uv_from_texture(*sprite_sheet, sprite_x, sprite_y);
         Renderer.set_shader_for_images(*sprite_sheet);
         Renderer.immediate_quad(x0 = xx x0, y0 = xx y0, x1 = xx x1, y1 = xx y1, uv0 = uv0, uv1 = uv1);
     }
 
-} @Component @Draw @Update
+} @Component @Draw 
 
 Transform :: struct {
     using component : Component;
@@ -427,6 +423,7 @@ Teleporter :: struct {
                     player_xform.pos = new_pos;
                 } else {
                     // The map doesn't exist, to prevent checking every frame, delete ourselves.
+                    Basic.log_error("Map % doesn't exist!", new_world_pos);
                     Entity.delete(entity);
                 }
             } else {

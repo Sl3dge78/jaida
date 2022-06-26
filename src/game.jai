@@ -34,7 +34,6 @@ operator - :: (a: Vector2i, b: Vector2i) -> Vector2i {
 }
 
 
-
 Game :: struct {
     State :: enum {
         GAME;
@@ -113,14 +112,15 @@ Game :: struct {
                 Renderer.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx context.game.screen_width, y1 = xx context.game.screen_height, color = .{1, 1, 1, 0.5});
             }
         }
+
         layer_separator(0);
         Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(1);
 
         Component_Manager.draw_components();
 
-        // Player
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
+        layer_separator(2);
 
         if game.state == .EDITOR {
             Editor.draw();

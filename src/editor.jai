@@ -8,43 +8,53 @@ Editor :: struct {
     offset_y : s32 = -42;
     selected_tile : u32 = 0;
     current_layer := 0;
-    zoom := 2.0;
+    zoom :: 2.0;
 
     update :: () {
         game := *context.game;
         editor := *context.editor;
-        if Input.get_mouse_button(SDL_BUTTON_LEFT) {
-            if !editor.show_map || Input.mouse_x > game.screen_width / 2 {
+        if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_LEFT] & .START {
+            if editor.show_map {
+                if game.mouse_x < game.screen_width / 2 { // Clicking on the map
+                    tile_x := game.mouse_x / TILE_SIZE / editor.zoom - editor.offset_x;
+                    tile_y := game.mouse_y / TILE_SIZE / editor.zoom - editor.offset_y;
+                    editor.selected_tile = xy_to_tile_id(*game.map_texture, xx tile_x, xx tile_y);
+                }
+            }
+        }
+
+        if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_LEFT] & .DOWN {
+            if !editor.show_map || game.mouse_x > game.screen_width / 2 {
                 Map.set_tile(
                     game.current_map,
-                    Map.screen_to_map(game.camera_position, Input.mouse_x, Input.mouse_y),
+                    Map.screen_to_map(game.camera_position, game.mouse_x, game.mouse_y),
                     xx editor.current_layer,
                     editor.selected_tile);
             }
         }
-        if Input.get_mouse_button(SDL_BUTTON_RIGHT) {
-            if !editor.show_map || Input.mouse_x > game.screen_width / 2 {
+        if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_RIGHT] & .DOWN {
+            if !editor.show_map || game.mouse_x > game.screen_width / 2 {
                 Map.set_tile(
                     game.current_map,
-                    Map.screen_to_map(game.camera_position, Input.mouse_x, Input.mouse_y),
+                    Map.screen_to_map(game.camera_position, game.mouse_x, game.mouse_y),
                     xx editor.current_layer,
                     0);
             }
         }
 
-        if Input.get_keyboard(SDL_SCANCODE_W) {
+        if Input.input_button_states[#char "W"] {
             editor.offset_y += 1;
             if (editor.offset_y > 0) editor.offset_y = 0; 
         }        
-        if Input.get_keyboard(SDL_SCANCODE_S) {
+        if Input.input_button_states[#char "S"] {
             editor.offset_y -= 1;
             if (editor.offset_y < -42) editor.offset_y = -42; // @Hardcoded, can't be bothered to do the math
         } 
-        if Input.get_keyboard(SDL_SCANCODE_A) {
+        if Input.input_button_states[#char "A"] {
             editor.offset_x -= 1;
             if (editor.offset_x < -43) editor.offset_x = -43; // @Hardcoded, can't be bothered to do the math
         }
-        if Input.get_keyboard(SDL_SCANCODE_D) {
+        if Input.input_button_states[#char "D"] {
             editor.offset_x += 1;
             if (editor.offset_x > 0) editor.offset_x = 0;
         } 
@@ -62,31 +72,31 @@ Editor :: struct {
             zoom := context.editor.zoom;
 
 
-            Renderer.set_scissor(0, 0, screen_width / 2, screen_height);
+            Simp.set_scissor(0, 0, screen_width / 2, screen_height);
             // Draw the background 
-            Renderer.set_shader_for_color();
-            Renderer.immediate_quad(0, 0, map_texture.width * zoom, map_texture.height * zoom, .{.70, 0.20, 0.70, 1.0});
+            Simp.set_shader_for_color();
+            Simp.immediate_quad(0, 0, map_texture.width * zoom, map_texture.height * zoom, .{.70, 0.20, 0.70, 1.0});
 
             // Draw the texture
-            Renderer.set_shader_for_images(*map_texture);
+            Simp.set_shader_for_images(*map_texture);
             x0 := xx (context.editor.offset_x * TILE_SIZE + 0) * zoom;
             x1 := xx (context.editor.offset_x * TILE_SIZE + map_texture.width) * zoom;
             y0 := xx (context.editor.offset_y * TILE_SIZE + 0) * zoom;
             y1 := xx (context.editor.offset_y * TILE_SIZE + map_texture.height) * zoom;
-            Renderer.immediate_quad(x0, y0, x1, y1, .{1,1,1,1}); 
+            Simp.immediate_quad(x0, y0, x1, y1, .{1,1,1,1}); 
 
             // Highlight selected tile
-            Renderer.set_shader_for_color();
+            Simp.set_shader_for_color();
             tile_x, tile_y := tile_id_to_xy(*map_texture, context.editor.selected_tile);
 
-            Renderer.immediate_quad(
+            Simp.immediate_quad(
                 x0 + tile_x * TILE_SIZE * zoom, 
                 y0 + tile_y * TILE_SIZE * zoom, 
                 x0 + (tile_x + 1) * TILE_SIZE * zoom, 
                 y0 + (tile_y + 1) * TILE_SIZE * zoom, 
                 .{1,1,0,.5});
 
-            Renderer.clear_scissor();
+            Simp.clear_scissor();
         }
     }
 

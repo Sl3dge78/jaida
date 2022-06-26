@@ -17,7 +17,7 @@ Component :: struct {
 Sprite :: struct {
     using component : Component;
 
-    sprite_sheet : Renderer.Texture = ---; 
+    sprite_sheet : Simp.Texture = ---; 
     x0, y0, x1, y1 : int;
     sprite_x : u32;
     sprite_y : u32;
@@ -39,8 +39,13 @@ Sprite :: struct {
             sprite_x = xx xform.direction;
         }
         uv0, uv1 := get_uv_from_texture(*sprite_sheet, sprite_x, sprite_y);
-        Renderer.set_shader_for_images(*sprite_sheet);
-        Renderer.immediate_quad(x0 = xx x0, y0 = xx y0, x1 = xx x1, y1 = xx y1, uv0 = uv0, uv1 = uv1);
+        Simp.set_shader_for_images(*sprite_sheet);
+        Simp.immediate_quad(
+            p0 = make_vector2(xx x0, xx y0),
+            p1 = make_vector2(xx x1, xx y0),
+            p2 = make_vector2(xx x1, xx y1),
+            p3 = make_vector2(xx x0, xx y1),
+            uv0 = uv0, uv1 = make_vector2(uv1.x, uv0.y), uv2 = uv1, uv3 = make_vector2(uv0.x, uv1.y));
     }
 
 } @Component @Draw 
@@ -224,7 +229,7 @@ Hitbox :: struct {
     }
 
     draw :: (using comp : *Hitbox) {
-        Renderer.set_shader_for_color();
+        Simp.set_shader_for_color();
         xform := Entity.get_component(entity, Transform);
         x0, y0 := Map.map_to_screen(context.game.camera_position, xform.pos + o0);
         x1, y1 := Map.map_to_screen(context.game.camera_position, xform.pos + o1);
@@ -239,7 +244,7 @@ Hitbox :: struct {
             case .ENEMY; color = rgba(1, .2, .2, 0.4);
             case .PLAYER; color = rgba(.2, 1, .2, 0.4);
         }
-        Renderer.immediate_quad(x0 = xx x0, y0 = xx y0, x1 = xx x1, y1 = xx y1, color = color);
+        Simp.immediate_quad(x0 = xx x0, y0 = xx y0, x1 = xx x1, y1 = xx y1, color = color);
     }
 
 } @Component @Update @Draw
@@ -314,21 +319,18 @@ Player :: struct {
         if state != .ATTACKING {
             // Movement
             player_vel : Vector2;
-            if Input.get_keyboard(SDL_SCANCODE_W) then player_vel.y += 1;         
-            if Input.get_keyboard(SDL_SCANCODE_A) then player_vel.x -= 1;
-            if Input.get_keyboard(SDL_SCANCODE_S) then player_vel.y -= 1; 
-            if Input.get_keyboard(SDL_SCANCODE_D) then player_vel.x += 1; 
+            if Input.input_button_states[#char "W"] & .DOWN then player_vel.y += 1;         
+            if Input.input_button_states[#char "A"] & .DOWN then player_vel.x -= 1;
+            if Input.input_button_states[#char "S"] & .DOWN then player_vel.y -= 1; 
+            if Input.input_button_states[#char "D"] & .DOWN then player_vel.x += 1; 
             norm_vel := Math.unit_vector(player_vel) * (delta_time * SPEED);
             velocity.vel = norm_vel;
 
             // Attack
-            if Input.pressed_this_frame(SDL_SCANCODE_SPACE) {
+            if Input.input_button_states[Input.Key_Code.SPACEBAR] & .START {
                 state = .ATTACKING;
                 attack_time = 0.2;
                 Game.create_weapon(entity, .ENEMY, attack_time);
-            }
-            if Input.pressed_this_frame(SDL_SCANCODE_P) {
-                Basic.log("%", << Entity.get_component(entity, Transform));
             }
         } else {
             velocity.vel = .{0, 0};

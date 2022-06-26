@@ -33,6 +33,12 @@ operator - :: (a: Vector2i, b: Vector2i) -> Vector2i {
     return result;
 }
 
+load_texture_no_filter :: (tex : *Simp.Texture, path : string) -> bool {
+    result := Simp.texture_load_from_file(tex, path);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    return result;
+}
 
 Game :: struct {
     State :: enum {
@@ -44,15 +50,18 @@ Game :: struct {
     screen_width : s32;
     screen_height : s32;
 
+    mouse_x : int;
+    mouse_y : int;
+
     current_map : Map;
     current_world_pos : Vector2i;
-    map_texture : Renderer.Texture;
+    map_texture : Simp.Texture;
     
     camera_position : Vector2 = .{0.5, 0.75};
 
-    blue_samurai_texture : Renderer.Texture;
-    red_samurai_texture : Renderer.Texture;
-    katana_texture : Renderer.Texture;
+    blue_samurai_texture : Simp.Texture;
+    red_samurai_texture  : Simp.Texture;
+    katana_texture       : Simp.Texture;
 
     player : *Entity;
 
@@ -61,10 +70,10 @@ Game :: struct {
 
         Random.random_seed(SDL_GetPerformanceCounter());
 
-        Renderer.load_texture(*blue_samurai_texture, "res/blue_samurai.png");
-        Renderer.load_texture(*red_samurai_texture, "res/red_samurai.png");
-        Renderer.load_texture(*katana_texture, "res/katana.png");
-        Renderer.load_texture(*map_texture, "res/world.png");
+        load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
+        load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
+        load_texture_no_filter(*katana_texture, "res/katana.png");
+        load_texture_no_filter(*map_texture, "res/world.png");
         
         Basic.log("Sprite : %", Component_Manager.get_component_id(Sprite));
         // Create player
@@ -99,17 +108,17 @@ Game :: struct {
     draw :: () {
         game := *context.game;
         if game.state == .GAME {
-            Renderer.clear_render_target(0, 0, 0, 1);
+            Simp.clear_render_target(0, 0, 0, 1);
         } else {
-            Renderer.clear_render_target(0.5, 0, 0, 1);
+            Simp.clear_render_target(0.5, 0, 0, 1);
         }
 
         Map.draw_layer(0, game.current_map, *game.map_texture, game.camera_position);
 
         layer_separator :: (layer : int) {
             if context.game.state == .EDITOR && context.editor.current_layer > layer {
-                Renderer.set_shader_for_color();
-                Renderer.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx context.game.screen_width, y1 = xx context.game.screen_height, color = .{1, 1, 1, 0.5});
+                Simp.set_shader_for_color();
+                Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx context.game.screen_width, y1 = xx context.game.screen_height, color = .{1, 1, 1, 0.5});
             }
         }
 

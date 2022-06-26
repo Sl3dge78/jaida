@@ -3,6 +3,9 @@ String :: #import "String";
 Math :: #import "Math";
 Random :: #import "Random";
 B_Array :: #import "Bucket_Array";
+Simp :: #import "Simp";
+Window_Creation :: #import "Window_Creation";
+Input :: #import "Input";
 
 using Math; // To import operator overloading
 libc :: #foreign_system_library "libm";
@@ -10,10 +13,6 @@ round :: (val : float32) -> float32 #foreign libc "roundf";
 
 File :: #import "File";
 #import "GL";
-#import "SDL";
-
-Renderer :: #import "Renderer";
-Input :: #import "sInput";
 
 #load "game.jai";
 #load "ecs.jai";
@@ -22,7 +21,6 @@ Input :: #import "sInput";
 #load "sprite.jai";
 #load "map.jai";
 #load "editor.jai";
-// #load "character.jai";
 
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;
@@ -33,7 +31,6 @@ Direction :: enum u8 {
     NORTH :: 1;
     WEST :: 2;
     EAST :: 3;
-
 }
 
 forward :: (dir : Direction) -> Vector2 {
@@ -48,26 +45,15 @@ forward :: (dir : Direction) -> Vector2 {
 main :: () {
     // Init
     Basic.init_time();
-    SDL_Init(SDL_INIT_EVERYTHING);
-    defer SDL_Quit();
 
-    window := SDL_CreateWindow("Zelda", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1280, 720, SDL_WINDOW_OPENGL);
-    if !window {
-        Basic.log("%", Basic.to_string(SDL_GetError()));
-        return;
-    }
-    defer SDL_DestroyWindow(window);
-
-    Renderer.init(window);
-    defer Renderer.deinit();
+    window := Window_Creation.create_window(1280, 720, "Zelda!");
 
     // Note: Game_State and Editor are added to the context where they are defined.
     game_state := *context.game;
     editor := *context.editor;
 
-    w, h : s32 = ---;
-    SDL_GetWindowSize(window, *game_state.screen_width, *game_state.screen_height);
-
+    game_state.screen_width, game_state.screen_height = Simp.get_render_dimensions(window);
+    Simp.set_render_target(window);
     Game.load();
 
     quit := false;
@@ -77,42 +63,22 @@ main :: () {
         delta_time : float = cast(float) (now - last_time);
         last_time = now;
 
-        Input.begin_frame(game_state.screen_height);
-
-        // @TODO : Make it so that the only way to access these is through keymaps?
-        event : SDL_Event = ---;
-        while SDL_PollEvent(*event) {
-            if event.type == {
-                case SDL_QUIT;
-                    quit = true;
-                case SDL_WINDOWEVENT; 
-                    if event.window.event == {
-                        case SDL_WINDOWEVENT_RESIZED; 
-                            Renderer.update_window(window);
-                    };
-            };
-            if game_state.state == .EDITOR {
-                if event.type == {
-                    case SDL_MOUSEBUTTONUP;
-                        if event.button.button == SDL_BUTTON_LEFT {
-                            if editor.show_map {
-                                if Input.mouse_x < game_state.screen_width / 2 { // Clicking on the map
-                                    tile_x := Input.mouse_x / TILE_SIZE / editor.zoom - editor.offset_x;
-                                    tile_y := Input.mouse_y / TILE_SIZE / editor.zoom - editor.offset_y;
-                                    editor.selected_tile = xy_to_tile_id(*game_state.map_texture, xx tile_x, xx tile_y);
-                                }
-                            }
-                        }
-                }
-            }
-            keymap_handler(*event);
+        game_state.mouse_x, game_state.mouse_y = Window_Creation.get_mouse_pointer_position(window, false);
+        game_state.mouse_y = game_state.screen_height - game_state.mouse_y;
+        Input.update_window_events();
+        for Input.events_this_frame {
+            if it.type == .QUIT then quit = true;
+            keymap_handler(it);
+        }
+        for Input.get_window_resizes() {
+            Simp.update_window(it.window);
         }
 
         Game.update(delta_time);
         Component_Manager.cleanup();
         Game.draw();
 
-        Renderer.swap_buffers(window);
+        Simp.swap_buffers(window);
         Basic.reset_temporary_storage();
     }
 }

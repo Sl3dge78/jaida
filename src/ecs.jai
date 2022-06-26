@@ -222,9 +222,6 @@ Component_Manager :: struct {
     cleanup :: () {
         for * all_entities {
             if it.request_active_state_toggle {
-                for it.components {
-                    Basic.log("%: %", it_index, it);
-                }
                 Entity.change_inactive(it, !it.inactive);
                 it.request_active_state_toggle = false;
             }

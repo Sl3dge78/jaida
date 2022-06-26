@@ -9,8 +9,8 @@ Map_Type :: [MAP_LAYERS][MAP_WIDTH*MAP_HEIGHT]u32;
 Map :: struct {
     tiles : Map_Type;
 
-    draw_layer :: (layer : u32, using map : Map, texture : *Renderer.Texture, cam : Vector2) {
-        Renderer.set_shader_for_images(texture);
+    draw_layer :: (layer : u32, using map : Map, texture : *Simp.Texture, cam : Vector2) {
+        Simp.set_shader_for_images(texture);
         y := 0;
         for tiles[layer] {
             map_coord := xy(cast(float32)(it_index % MAP_WIDTH), cast(float32)(it_index / MAP_WIDTH));
@@ -19,10 +19,12 @@ Map :: struct {
 
             uv0, uv1 := get_uv_from_texture(texture, it); 
 
-            Renderer.immediate_quad(
-                x0 = xx x0, y0 = xx y0, 
-                x1 = xx x1, y1 = xx y1,
-                uv0 = uv0, uv1 = uv1);
+            Simp.immediate_quad(
+                p0 = make_vector2(xx x0, xx y0),
+                p1 = make_vector2(xx x1, xx y0),
+                p2 = make_vector2(xx x1, xx y1),
+                p3 = make_vector2(xx x0, xx y1),
+                uv0 = uv0, uv1 = make_vector2(uv1.x, uv0.y), uv2 = uv1, uv3 = make_vector2(uv0.x, uv1.y));
         }
     }
 

@@ -169,7 +169,7 @@ Health :: struct {
         Basic.log("hp: %", hp);
 
         if !hp {
-            Entity.delete(entity);
+            entity.flags |= .SHOULD_DELETE;
         }
     }
 
@@ -179,6 +179,12 @@ Health :: struct {
 } @Component @Update
 
 Hitbox :: struct {
+    Tag :: enum {
+        NONE;
+        PLAYER;
+        ENEMY;
+        INTERACT;
+    }
     using component : Component;
     p0 := Vector2.{-0.5, -0.5}; // Relative to the current center in the transform, looking south
     p1 := Vector2.{ 0.5,  0.5};
@@ -186,8 +192,8 @@ Hitbox :: struct {
     o0 : Vector2; // Relative to current center but oriented
     o1 : Vector2; 
 
-    tag: Entity.Tag = .NONE;     // Will be looked at by hitboxes. Used to receive 
-    look_for : Entity.Tag = .NONE; // What kind of hitboxes to search. Used to give
+    tag: Tag = .NONE;     // Will be looked at by hitboxes. Used to receive 
+    look_for : Tag = .NONE; // What kind of hitboxes to search. Used to give
 
     update :: (using comp : *Hitbox, delta_time : float) {
         Component.require_component(Transform);
@@ -222,14 +228,21 @@ Hitbox :: struct {
             other_xform := Entity.get_component(it.entity, Transform);
             collides := Game.rect_intersects(o0 + xform.pos, o1 + xform.pos, it.o0 + other_xform.pos, it.o1 + other_xform.pos);
             if collides {
-                hp := Entity.get_component(it.entity, Health);
-                if hp then Health.hit(hp);
+                if look_for == {
+                    case .PLAYER; #through;
+                    case .ENEMY;
+                        hp := Entity.get_component(it.entity, Health);
+                        if hp then Health.hit(hp);
+                    case .INTERACT;
+                        inter := Entity.get_component(it.entity, Interact);
+                        if inter then Interact.hit(inter);
+                }
             }
         }
     }
 
     draw :: (using comp : *Hitbox) {
-        Simp.set_shader_for_color();
+        Simp.set_shader_for_color(true);
         xform := Entity.get_component(entity, Transform);
         x0, y0 := Map.map_to_screen(context.game.camera_position, xform.pos + o0);
         x1, y1 := Map.map_to_screen(context.game.camera_position, xform.pos + o1);
@@ -237,12 +250,14 @@ Hitbox :: struct {
         if comp.tag == {
             case .NONE; {
                 if comp.look_for == {
-                    case .ENEMY; color = rgba(1, .4, .4, 0.4);
-                    case .PLAYER; color = rgba(.4, 1, .4, 0.4);
+                    case .ENEMY;    color = rgba( 1, .4, .4, .4);
+                    case .PLAYER;   color = rgba(.4,  1, .4, .4);
+                    case .INTERACT; color = rgba(.4, .4, .4, .4);
                 }
             }
             case .ENEMY; color = rgba(1, .2, .2, 0.4);
             case .PLAYER; color = rgba(.2, 1, .2, 0.4);
+            case .INTERACT; color = rgba(.2, .2, 1, 0.4);
         }
         Simp.immediate_quad(x0 = xx x0, y0 = xx y0, x1 = xx x1, y1 = xx y1, color = color);
     }
@@ -254,7 +269,7 @@ AutoKill :: struct {
     time : float;
     update :: (using c : *AutoKill, delta_time : float) {
         time -= delta_time;
-        if time <= 0 then Entity.delete(entity);
+        if time <= 0 then entity.flags |= .SHOULD_DELETE;
     }
 } @Component @Update
 
@@ -331,6 +346,10 @@ Player :: struct {
                 state = .ATTACKING;
                 attack_time = 0.2;
                 Game.create_weapon(entity, .ENEMY, attack_time);
+            }
+
+            if Input.input_button_states[#char "E"] & .START {
+                Game.create_interactor(entity);
             }
         } else {
             velocity.vel = .{0, 0};
@@ -426,7 +445,7 @@ Teleporter :: struct {
                 } else {
                     // The map doesn't exist, to prevent checking every frame, delete ourselves.
                     Basic.log_error("Map % doesn't exist!", new_world_pos);
-                    Entity.delete(entity);
+                    entity.flags |= .SHOULD_DELETE;
                 }
             } else {
                 player_xform.pos = new_pos;
@@ -434,3 +453,11 @@ Teleporter :: struct {
         }
     }
 } @Component @Update
+
+Interact :: struct {
+    using c : Component;
+
+    hit :: (using i : *Interact) {
+
+    }
+} @Component

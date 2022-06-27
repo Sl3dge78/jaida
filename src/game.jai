@@ -50,6 +50,8 @@ Game :: struct {
     screen_width : s32;
     screen_height : s32;
 
+    font : *Simp.Dynamic_Font;
+
     mouse_x : int;
     mouse_y : int;
 
@@ -69,6 +71,8 @@ Game :: struct {
         using context.game;
 
         Random.random_seed(SDL_GetPerformanceCounter());
+
+        font = Simp.get_font_at_size("res", "monospace.ttf", 16 * 2);
 
         load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
         load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
@@ -94,6 +98,11 @@ Game :: struct {
 
         create_enemy();
         create_teleporter(.{13, 13}, .{14.5, 9}, .{-1, 0});
+
+        dialog := Entity.create();
+        Entity.add_component(dialog, Transform.{pos = .{14, 13}, world_pos = .{-1, 0}});
+        Entity.add_component(dialog, Interact);
+        Entity.add_component(dialog, Hitbox.{tag = .INTERACT});
     }
 
     update :: (delta_time : float32) {
@@ -145,10 +154,10 @@ Game :: struct {
             xform := Entity.get_component(it, Transform);
             if xform {
                 if xform.world_pos == map_pos && it.inactive {
-                    it.request_active_state_toggle = true;
+                    it.flags |= .CHANGE_ACTIVE;
                 }
                 if !it.inactive && xform.world_pos != map_pos {
-                    it.request_active_state_toggle = true;
+                    it.flags |= .CHANGE_ACTIVE;
                 }
             }
         }
@@ -211,7 +220,7 @@ Game :: struct {
         Entity.add_component(e, Health);
     }
 
-    create_weapon :: (parent : *Entity, tag : Entity.Tag, time : float) -> *Entity {
+    create_weapon :: (parent : *Entity, tag : Hitbox.Tag, time : float) -> *Entity {
         weapon := Entity.create();
         xform := Entity.get_component(parent, Transform);
         w_xform := Entity.add_component(weapon, Transform);
@@ -241,6 +250,22 @@ Game :: struct {
         comp.new_pos = new_pos;
         comp.new_world_pos = new_world_pos;
         return tp;
+    }
+
+    create_interactor :: (parent : *Entity) {
+        interactor := Entity.create();
+        xform := Entity.get_component(parent, Transform);
+        w_xform := Entity.add_component(interactor, Transform);
+        Component.copy(xform, w_xform);
+        w_xform.pos += forward(w_xform.direction);
+
+        hitbox := Entity.add_component(interactor, Hitbox);
+        hitbox.look_for = .INTERACT;
+        hitbox.p0.x = -0.2;
+        hitbox.p1.x = 0.2;
+        hitbox.p0.y = -0.2;
+        hitbox.p1.y = 0.2;
+        interactor.flags |= .SHOULD_DELETE; // @Hack: is it even a hack??
     }
 }
 

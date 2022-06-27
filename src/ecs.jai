@@ -13,30 +13,19 @@ Entity :: struct {
         NPC :: 2;
         ENEMY :: 4;
     };
-    tag : Tag; 
-    request_active_state_toggle : bool;
+    tag : Tag;
+
+    flags : enum_flags {
+        NONE :: 0;
+        CHANGE_ACTIVE :: 1;
+        SHOULD_DELETE :: 2;
+    };
     inactive: bool;
 
     create :: () -> *Entity {
         return find_and_occupy_empty_slot(*all_entities);
     }
 
-    delete :: (entity : *Entity) {
-        #insert #run -> string {
-            builder : Basic.String_Builder;
-            for COMPONENT_LIST {
-                Basic.print_to_builder(*builder, "remove_component(entity, %);\n", it);
-            }
-            return Basic.builder_to_string(*builder);
-        };
-
-        for * all_entities {
-            if it == entity {
-                remove it;
-                return;
-            }
-        }
-    }
 
     find_first :: (tag : Tag) -> *Entity {
         for * all_entities {
@@ -221,13 +210,26 @@ Component_Manager :: struct {
 
     cleanup :: () {
         for * all_entities {
-            if it.request_active_state_toggle {
+            if it.flags & .CHANGE_ACTIVE {
                 Entity.change_inactive(it, !it.inactive);
-                it.request_active_state_toggle = false;
+                it.flags &= ~.CHANGE_ACTIVE;
+            }
+            if it.flags & .SHOULD_DELETE {
+                delete_entity(it);
+                remove it;
             }
         }
     }
 };
 
 #scope_file
+delete_entity :: (entity : *Entity) {
+    #insert #run -> string {
+        builder : Basic.String_Builder;
+        for COMPONENT_LIST {
+            Basic.print_to_builder(*builder, "Entity.remove_component(entity, %);\n", it);
+        }
+        return Basic.builder_to_string(*builder);
+    };
+}
 component_manager : Component_Manager;

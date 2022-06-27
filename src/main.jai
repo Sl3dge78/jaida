@@ -20,7 +20,10 @@ File :: #import "File";
 #load "keymaps.jai";
 #load "sprite.jai";
 #load "map.jai";
-#load "editor.jai";
+#load "dialog.jai";
+#if DEVELOPER {
+    #load "editor.jai";
+}
 
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;
@@ -50,7 +53,6 @@ main :: () {
 
     // Note: Game_State and Editor are added to the context where they are defined.
     game_state := *context.game;
-    editor := *context.editor;
 
     game_state.screen_width, game_state.screen_height = Simp.get_render_dimensions(window);
     Simp.set_render_target(window);

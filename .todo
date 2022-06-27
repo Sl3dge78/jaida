@@ -2,6 +2,9 @@
 # In-Progress 
 
 # Inbox 
+- [ ] Bip bip bip when talking
+:q
+- [ ] Il faut que le perso change de direction, MEME quand on est colles a un mur
 - [ ] Pathfinding ?
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
 - [ ] Have some components that update not every frame

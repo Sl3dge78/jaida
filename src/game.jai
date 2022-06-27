@@ -1,3 +1,4 @@
+#placeholder DEVELOPER;
 
 Vector2i :: struct {
     x : s32;
@@ -44,6 +45,7 @@ Game :: struct {
     State :: enum {
         GAME;
         EDITOR;
+        DIALOG;
     };
 
     state : State = .GAME;
@@ -51,6 +53,7 @@ Game :: struct {
     screen_height : s32;
 
     font : *Simp.Dynamic_Font;
+    small_font : *Simp.Dynamic_Font;
 
     mouse_x : int;
     mouse_y : int;
@@ -67,12 +70,21 @@ Game :: struct {
 
     player : *Entity;
 
+    // Dialog
+    dialogbox_texture : Simp.Texture;
+    dialogbox_notitle_texture : Simp.Texture;
+    current_dialog_title : string;
+    current_dialog_lines : [] string;
+
     load :: () {
         using context.game;
 
-        Random.random_seed(SDL_GetPerformanceCounter());
+        Random.random_seed(cast(u64) Basic.get_time());
 
-        font = Simp.get_font_at_size("res", "monospace.ttf", 16 * 2);
+        font = Simp.get_font_at_size("res", "monospace.ttf", 8 * ZOOM);
+        small_font = Simp.get_font_at_size("res", "monospace.ttf", 4 * ZOOM);
+        load_texture_no_filter(*dialogbox_texture, "res/ui/dialogbox.png");
+        load_texture_no_filter(*dialogbox_notitle_texture, "res/ui/dialogbox_notitle.png");
 
         load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
         load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
@@ -80,6 +92,7 @@ Game :: struct {
         load_texture_no_filter(*map_texture, "res/world.png");
         
         Basic.log("Sprite : %", Component_Manager.get_component_id(Sprite));
+        starting_world_pos :: Vector2i.{-1, 0};
         // Create player
         {
             player = Entity.create();
@@ -87,13 +100,12 @@ Game :: struct {
             sprite := Entity.add_component(player, Sprite);
             sprite.sprite_sheet = blue_samurai_texture;
 
-            xform := Entity.add_component(player, Transform.{pos = .{20, 11}});
+            xform := Entity.add_component(player, Transform.{pos = .{20, 11}, world_pos = starting_world_pos});
             Entity.add_component(player, Animation);
             Entity.add_component(player, Velocity);
             Entity.add_component(player, Player);
             Entity.add_component(player, Health);
             Entity.add_component(player, Hitbox.{tag = .PLAYER});
-            request_map_change(current_map, xform.world_pos);
         }
 
         create_enemy();
@@ -103,31 +115,42 @@ Game :: struct {
         Entity.add_component(dialog, Transform.{pos = .{14, 13}, world_pos = .{-1, 0}});
         Entity.add_component(dialog, Interact);
         Entity.add_component(dialog, Hitbox.{tag = .INTERACT});
+
+        request_map_change(current_map, starting_world_pos);
     }
 
     update :: (delta_time : float32) {
         game := *context.game;
-        if game.state == .GAME {
-            Component_Manager.update_components(delta_time);
-        } else if game.state == .EDITOR {
-            Editor.update();
+        if game.state == { 
+            case .GAME;
+                Component_Manager.update_components(delta_time);
+            case .EDITOR; {
+                #if DEVELOPER {
+                    Editor.update();
+                }
+            }
+            case .DIALOG; {
+                Dialog.update();
+            }
         }
     }
 
     draw :: () {
         game := *context.game;
-        if game.state == .GAME {
-            Simp.clear_render_target(0, 0, 0, 1);
-        } else {
+        if game.state == .EDITOR {
             Simp.clear_render_target(0.5, 0, 0, 1);
+        } else {
+            Simp.clear_render_target(0, 0, 0, 1);
         }
 
         Map.draw_layer(0, game.current_map, *game.map_texture, game.camera_position);
 
         layer_separator :: (layer : int) {
-            if context.game.state == .EDITOR && context.editor.current_layer > layer {
-                Simp.set_shader_for_color();
-                Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx context.game.screen_width, y1 = xx context.game.screen_height, color = .{1, 1, 1, 0.5});
+            #if DEVELOPER {
+                if context.game.state == .EDITOR && context.editor.current_layer > layer {
+                    Simp.set_shader_for_color();
+                    Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx context.game.screen_width, y1 = xx context.game.screen_height, color = .{1, 1, 1, 0.5});
+                }
             }
         }
 
@@ -140,8 +163,12 @@ Game :: struct {
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(2);
 
-        if game.state == .EDITOR {
-            Editor.draw();
+        if game.state == .DIALOG {
+            Dialog.draw();
+        }
+
+        #if DEVELOPER {
+           Editor.draw();
         }
     }
 
@@ -267,6 +294,7 @@ Game :: struct {
         hitbox.p1.y = 0.2;
         interactor.flags |= .SHOULD_DELETE; // @Hack: is it even a hack??
     }
+
 }
 
 #add_context game : Game;

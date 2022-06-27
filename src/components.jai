@@ -458,6 +458,6 @@ Interact :: struct {
     using c : Component;
 
     hit :: (using i : *Interact) {
-
+        Dialog.open("Hello, I'm a chest!\nAnd this is a second line!\nAnd a third!\nOh no we went over\nChest");
     }
 } @Component

@@ -3,7 +3,7 @@
 #add_context editor : Editor;
 
 Editor :: struct {
-    show_map := true;
+    show_map := false;
     offset_x : s32 = 0;
     offset_y : s32 = -42;
     selected_tile : u32 = 0;
@@ -98,6 +98,11 @@ Editor :: struct {
 
             Simp.clear_scissor();
         }
+        
+        xform := Entity.get_component(player, Transform);
+        status_line := Basic.tprint("% - %", xform.pos, xform.world_pos);
+
+        Simp.draw_text(small_font, 0, screen_height - 16, status_line);
     }
 
     save_map :: (down : bool) {

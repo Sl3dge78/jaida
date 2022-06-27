@@ -5,7 +5,9 @@ Keymap :: struct {
     key : Input.Key_Code;
 }
 
-keymaps_storage :: Keymap.[
+// @Todo : Make this useful in gameplay, and find a way to keep both separated
+#if DEVELOPER {
+    keymaps_storage :: Keymap.[
     Keymap.{Editor.toggle_editor,     .F1},
     Keymap.{Editor.save_map,          .F5},
     Keymap.{Editor.load_map,          .F9},
@@ -17,6 +19,9 @@ keymaps_storage :: Keymap.[
     Keymap.{Editor.map_up,     .ARROW_UP},
     Keymap.{Editor.map_down,   .ARROW_DOWN},
     ];
+} else {
+    keymaps_storage : []Keymap;
+}
 
 keymap_handler :: (event : Input.Event) {
     if event.type == .KEYBOARD {

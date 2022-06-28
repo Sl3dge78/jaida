@@ -8,8 +8,11 @@ Window_Creation :: #import "Window_Creation";
 Input :: #import "Input";
 
 using Math; // To import operator overloading
-libc :: #foreign_system_library "libm";
-round :: (val : float32) -> float32 #foreign libc "roundf";
+round :: (x : float32) -> float32 {
+    return ifx x >= 0.0 then floor(x+0.5) else ceil(x+0.5);
+}
+
+#placeholder DEVELOPER;
 
 File :: #import "File";
 #import "GL";

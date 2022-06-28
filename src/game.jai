@@ -1,5 +1,3 @@
-#placeholder DEVELOPER;
-
 Vector2i :: struct {
     x : s32;
     y : s32;

@@ -65,7 +65,6 @@ build :: () {
     w := Compiler.compiler_create_workspace("zelda");
     
     options := Compiler.get_build_options();
-    options.output_executable_name = "out";
     options.output_path = "bin";
     options.intermediate_path = "tmp";
     options.output_type = .EXECUTABLE;
@@ -86,9 +85,10 @@ build :: () {
 
     Compiler.set_build_options(options, w);
     Compiler.compiler_begin_intercept(w);
-    Compiler.add_build_file("src/main.jai", w);
     Compiler.add_build_string("DEVELOPER :: true;", w); // @Completeness: add release flag
     // Compiler.add_build_string("DEVELOPER :: false;", w); // @Completeness: add release flag
+    Compiler.add_build_file("src/main.jai", w);
+    
     
     while true {
         message := Compiler.compiler_wait_for_message();

@@ -454,10 +454,17 @@ Teleporter :: struct {
     }
 } @Component @Update
 
+
 Interact :: struct {
     using c : Component;
 
     hit :: (using i : *Interact) {
-        Dialog.open("Hello, I'm a chest!\nAnd this is a second line!\nAnd a third!\nOh no we went over\nChest");
+        Dialog.open(tree);
     }
 } @Component
+
+#scope_file
+tree := Dialog.Node.[
+    Dialog.Node.{lines = .["Hello, I'm a chest!","And this is a second line!"], next = .[1]},
+    Dialog.Node.{title = "Chest", lines = .["Ok I'll stop"] },
+];

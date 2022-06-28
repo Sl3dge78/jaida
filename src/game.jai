@@ -71,8 +71,9 @@ Game :: struct {
     // Dialog
     dialogbox_texture : Simp.Texture;
     dialogbox_notitle_texture : Simp.Texture;
-    current_dialog_title : string;
-    current_dialog_lines : [] string;
+    current_dialog_tree : []Dialog.Node;
+    current_dialog_node : u8; // I don't think we'll ever get a dialog tree bigger than 255...
+    current_choice : u8;
 
     load :: () {
         using context.game;

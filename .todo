@@ -1,9 +1,12 @@
 
 # In-Progress 
+- [ ] Dialogs
+    - [X] Basic window
+    - [X] Chain
+    - [ ] Choices
 
 # Inbox 
 - [ ] Bip bip bip when talking
-:q
 - [ ] Il faut que le perso change de direction, MEME quand on est colles a un mur
 - [ ] Pathfinding ?
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
@@ -12,7 +15,7 @@
 
 ## System
 - [ ] Puzzles (push blocks?)
-- [ ] Dialogs
+
 - [ ] (Collision) Detect them with NPCs
 
 ## Content

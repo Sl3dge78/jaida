@@ -45,6 +45,13 @@ Game :: struct {
         EDITOR;
         DIALOG;
     };
+    
+    Palette :: struct {
+        BLACK       :: Vector4.{0.078, 0.106, 0.106, 1};
+        BLUE        :: Vector4.{0.176, 0.412, 0.482, 1};
+        ORANGE      :: Vector4.{1, 0.584, 0.329, 1};
+        DARK_ORANGE :: Vector4.{0.82, 0.294, 0.204, 1};
+    };
 
     state : State = .GAME;
     screen_width : s32;
@@ -71,9 +78,16 @@ Game :: struct {
     // Dialog
     dialogbox_texture : Simp.Texture;
     dialogbox_notitle_texture : Simp.Texture;
+    dialogbox_choice_texture : Simp.Texture;
+
     current_dialog_tree : []Dialog.Node;
     current_dialog_node : u8; // I don't think we'll ever get a dialog tree bigger than 255...
-    current_choice : u8;
+    current_choice : s8;
+    char_timer : float;
+    dialog_nb_chars: int;
+
+    // This is a timer that is reset every second
+    second : float;
 
     load :: () {
         using context.game;
@@ -84,6 +98,7 @@ Game :: struct {
         small_font = Simp.get_font_at_size("res", "monospace.ttf", 4 * ZOOM);
         load_texture_no_filter(*dialogbox_texture, "res/ui/dialogbox.png");
         load_texture_no_filter(*dialogbox_notitle_texture, "res/ui/dialogbox_notitle.png");
+        load_texture_no_filter(*dialogbox_choice_texture, "res/ui/dialogbox_choice.png");
 
         load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
         load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
@@ -99,7 +114,7 @@ Game :: struct {
             sprite := Entity.add_component(player, Sprite);
             sprite.sprite_sheet = blue_samurai_texture;
 
-            xform := Entity.add_component(player, Transform.{pos = .{20, 11}, world_pos = starting_world_pos});
+            xform := Entity.add_component(player, Transform.{pos = .{14, 11}, world_pos = starting_world_pos});
             Entity.add_component(player, Animation);
             Entity.add_component(player, Velocity);
             Entity.add_component(player, Player);
@@ -120,6 +135,10 @@ Game :: struct {
 
     update :: (delta_time : float32) {
         game := *context.game;
+
+        game.second += delta_time;
+        if game.second > 1.0 then game.second -= 1.0;
+
         if game.state == { 
             case .GAME;
                 Component_Manager.update_components(delta_time);
@@ -129,7 +148,7 @@ Game :: struct {
                 }
             }
             case .DIALOG; {
-                Dialog.update();
+                Dialog.update(delta_time);
             }
         }
     }

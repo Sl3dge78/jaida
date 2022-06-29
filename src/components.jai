@@ -465,6 +465,7 @@ Interact :: struct {
 
 #scope_file
 tree := Dialog.Node.[
-    Dialog.Node.{lines = .["Hello, I'm a chest!","And this is a second line!"], next = .[1]},
-    Dialog.Node.{title = "Chest", lines = .["Ok I'll stop"] },
+    Dialog.Node.{lines = .["Hello, I'm a chest!","And this is a second line!", "How many lines can you fit here?"], jumps = .[1]},
+    Dialog.Node.{has_title = true, lines = .["Chest", "Hey I have a title now!"], jumps = .[2] },
+    Dialog.Node.{has_title = true, lines = .["Chest", "Go back to the start?", "Yes", "No"], jumps = .[0, -1]},
 ];

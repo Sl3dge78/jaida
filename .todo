@@ -3,10 +3,11 @@
 - [ ] Dialogs
     - [X] Basic window
     - [X] Chain
-    - [ ] Choices
+    - [X] Choices
+    - [X] Display lines character by character 
+    - [ ] Timing aren't perfect, the last char of a line isn't properly read. Need a debugger.
 
 # Inbox 
-- [ ] Bip bip bip when talking
 - [ ] Il faut que le perso change de direction, MEME quand on est colles a un mur
 - [ ] Pathfinding ?
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.

@@ -173,7 +173,7 @@ Game :: struct {
         layer_separator :: (layer : int) {
             #if DEVELOPER {
                 if global_game.state == .EDITOR && context.editor.current_layer > layer {
-                    Simp.set_shader_for_color();
+                    Simp.set_shader_for_color(true);
                     Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx global_game.screen_width, y1 = xx global_game.screen_height, color = .{1, 1, 1, 0.5});
                 }
             }

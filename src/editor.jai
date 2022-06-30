@@ -137,6 +137,7 @@ Editor :: struct {
 
     toggle_editor_map :: (down : bool) {
         if !down return;
+        if global_game.state != .EDITOR return;
         context.editor.show_map = !context.editor.show_map;
     }
 
@@ -187,6 +188,15 @@ Editor :: struct {
             xform := Entity.get_component(global_game.player, Transform);
             xform.world_pos.y -= 1;
             Editor.change_or_create_map(global_game.current_map, xform.world_pos);
+        }
+    }
+
+    fill_layer :: (down : bool) {
+        if global_game.state != .EDITOR return;
+        if down {
+            for * global_game.current_map.tiles[context.editor.current_layer] {
+                << it = context.editor.selected_tile;
+            }
         }
     }
 }

@@ -1,11 +1,17 @@
-Basic :: #import "Basic";
-String :: #import "String";
-Math :: #import "Math";
-Random :: #import "Random";
+Basic   :: #import "Basic";
+String  :: #import "String";
+Math    :: #import "Math";
+Random  :: #import "Random";
 B_Array :: #import "Bucket_Array";
-Simp :: #import "Simp";
-Window_Creation :: #import "Window_Creation";
-Input :: #import "Input";
+File    :: #import "File";
+
+#import "SDL"; // Audio
+
+#import "GL";
+Simp    :: #import "Simp";
+
+Input   :: #import "Input";
+Window_Creation  :: #import "Window_Creation";
 
 using Math; // To import operator overloading
 round :: (x : float32) -> float32 {
@@ -14,8 +20,7 @@ round :: (x : float32) -> float32 {
 
 #placeholder DEVELOPER;
 
-File :: #import "File";
-#import "GL";
+
 
 #load "game.jai";
 #load "ecs.jai";
@@ -24,6 +29,7 @@ File :: #import "File";
 #load "sprite.jai";
 #load "map.jai";
 #load "dialog.jai";
+#load "audio.jai";
 #if DEVELOPER {
     #load "editor.jai";
 }
@@ -51,14 +57,33 @@ forward :: (dir : Direction) -> Vector2 {
 main :: () {
     // Init
     Basic.init_time();
+    SDL_Init(SDL_INIT_AUDIO);
+    defer SDL_Quit();
 
     window := Window_Creation.create_window(1280, 720, "Zelda!");
 
-    // Note: Game_State and Editor are added to the context where they are defined.
-    game_state := *context.game;
+    // Note: Editor is added to the context where they are defined.
+    game_state := *global_game;
+
+    requested_spec := SDL_AudioSpec.{
+        freq = 44100,
+        format = AUDIO_S16,
+        channels = 1,
+        silence = 0,
+        samples = 4096,
+        size = 0,
+        callback = null,
+        userdata = null,
+    };
+    obtained : SDL_AudioSpec = ---;
+    game_state.audio_device = SDL_OpenAudioDevice(null, 0, *requested_spec, *obtained, 0);
+    Basic.assert(game_state.audio_device != 0);
+    defer SDL_CloseAudioDevice(game_state.audio_device);
+    SDL_PauseAudioDevice(global_game.audio_device, 0);
 
     game_state.screen_width, game_state.screen_height = Simp.get_render_dimensions(window);
     Simp.set_render_target(window);
+
     Game.load();
 
     quit := false;

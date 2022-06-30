@@ -57,6 +57,9 @@ Game :: struct {
     screen_width : s32;
     screen_height : s32;
 
+    audio_device : SDL_AudioDeviceID = ---;
+    volume : s8 = 32;
+
     font : *Simp.Dynamic_Font;
     small_font : *Simp.Dynamic_Font;
 
@@ -85,14 +88,16 @@ Game :: struct {
     current_choice : s8;
     char_timer : float;
     dialog_nb_chars: int;
+    dialog_blip : Audio_Stream;
 
     // This is a timer that is reset every second
     second : float;
 
     load :: () {
-        using context.game;
+        using global_game;
 
         Random.random_seed(cast(u64) Basic.get_time());
+
 
         font = Simp.get_font_at_size("res", "monospace.ttf", 8 * ZOOM);
         small_font = Simp.get_font_at_size("res", "monospace.ttf", 4 * ZOOM);
@@ -104,6 +109,8 @@ Game :: struct {
         load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
         load_texture_no_filter(*katana_texture, "res/katana.png");
         load_texture_no_filter(*map_texture, "res/world.png");
+
+        dialog_blip = Audio_Stream.load("res/audio/blip.wav");
         
         Basic.log("Sprite : %", Component_Manager.get_component_id(Sprite));
         starting_world_pos :: Vector2i.{-1, 0};
@@ -134,7 +141,7 @@ Game :: struct {
     }
 
     update :: (delta_time : float32) {
-        game := *context.game;
+        game := *global_game;
 
         game.second += delta_time;
         if game.second > 1.0 then game.second -= 1.0;
@@ -154,7 +161,7 @@ Game :: struct {
     }
 
     draw :: () {
-        game := *context.game;
+        game := *global_game;
         if game.state == .EDITOR {
             Simp.clear_render_target(0.5, 0, 0, 1);
         } else {
@@ -165,9 +172,9 @@ Game :: struct {
 
         layer_separator :: (layer : int) {
             #if DEVELOPER {
-                if context.game.state == .EDITOR && context.editor.current_layer > layer {
+                if global_game.state == .EDITOR && context.editor.current_layer > layer {
                     Simp.set_shader_for_color();
-                    Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx context.game.screen_width, y1 = xx context.game.screen_height, color = .{1, 1, 1, 0.5});
+                    Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx global_game.screen_width, y1 = xx global_game.screen_height, color = .{1, 1, 1, 0.5});
                 }
             }
         }
@@ -193,7 +200,7 @@ Game :: struct {
     request_map_change :: (current_map : Map, map_pos : Vector2i) -> bool {
         success := Map.load(current_map, map_pos);
         if !success return false;
-        context.game.current_world_pos = map_pos;
+        global_game.current_world_pos = map_pos;
 
         for * all_entities {
             xform := Entity.get_component(it, Transform);
@@ -229,17 +236,17 @@ Game :: struct {
         // @Speed : Get the sign of the velocity? to check only 1 side
         // @Hardcoded : Specify the size of the sprite?
         // Try to move on x
-        if  Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{ 0.4,  0.0}) == 0 &&
-            Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{-0.4,  0.0}) == 0 &&
-            Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{ 0.4, -0.4}) == 0 &&
-            Map.get_collision_at(context.game.current_map, new_center_x + Vector2.{-0.4, -0.4}) == 0 {
+        if  Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{ 0.4,  0.0}) == 0 &&
+            Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{-0.4,  0.0}) == 0 &&
+            Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{ 0.4, -0.4}) == 0 &&
+            Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{-0.4, -0.4}) == 0 {
                 result.x += velocity.x;
         }
 
-        if  Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{ 0.4,  0.0}) == 0 &&
-            Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{ 0.4, -0.5}) == 0 &&
-            Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{-0.4,  0.0}) == 0 &&
-            Map.get_collision_at(context.game.current_map, new_center_y + Vector2.{-0.4, -0.5}) == 0 {
+        if  Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{ 0.4,  0.0}) == 0 &&
+            Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{ 0.4, -0.5}) == 0 &&
+            Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{-0.4,  0.0}) == 0 &&
+            Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{-0.4, -0.5}) == 0 {
                 result.y += velocity.y;
         }
 
@@ -253,11 +260,11 @@ Game :: struct {
     create_enemy :: () {
         e := Entity.create();
         sprite := Entity.add_component(e, Sprite);
-        sprite.sprite_sheet = context.game.red_samurai_texture;
+        sprite.sprite_sheet = global_game.red_samurai_texture;
         xform := Entity.add_component(e, Transform);
         xform.pos.x = Random.random_get_within_range(0, MAP_WIDTH);
         xform.pos.y = Random.random_get_within_range(0, MAP_HEIGHT);
-        xform.world_pos = context.game.current_world_pos;
+        xform.world_pos = global_game.current_world_pos;
         Entity.add_component(e, Enemy);
         Entity.add_component(e, Velocity);
         Entity.add_component(e, Animation);
@@ -273,7 +280,7 @@ Game :: struct {
         w_xform.pos += forward(w_xform.direction);
 
         sprite := Entity.add_component(weapon, Sprite);
-        sprite.sprite_sheet = context.game.katana_texture;
+        sprite.sprite_sheet = global_game.katana_texture;
 
         hitbox := Entity.add_component(weapon, Hitbox);
         hitbox.look_for = tag;
@@ -290,7 +297,7 @@ Game :: struct {
         xform := Entity.add_component(tp, Transform);
         xform.pos.x = xx pos.x;
         xform.pos.y = xx pos.y;
-        xform.world_pos = context.game.current_world_pos;
+        xform.world_pos = global_game.current_world_pos;
         comp := Entity.add_component(tp, Teleporter);
         comp.new_pos = new_pos;
         comp.new_world_pos = new_world_pos;
@@ -315,4 +322,4 @@ Game :: struct {
 
 }
 
-#add_context game : Game;
+global_game : Game;

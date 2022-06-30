@@ -1,11 +1,6 @@
 
 # In-Progress 
-- [ ] Dialogs
-    - [X] Basic window
-    - [X] Chain
-    - [X] Choices
-    - [X] Display lines character by character 
-    - [ ] Timing aren't perfect, the last char of a line isn't properly read. Need a debugger.
+
 
 # Inbox 
 - [ ] Il faut que le perso change de direction, MEME quand on est colles a un mur
@@ -13,6 +8,8 @@
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
 - [ ] Have some components that update not every frame
 - [ ] Make units blink when invincible
+- [ ] Better audio system, using the callback. 
+    - (Dialog) queue x blipblips
 
 ## System
 - [ ] Puzzles (push blocks?)
@@ -38,3 +35,9 @@
 - [X] Enemy AI 2.0
     - [X] Attack patterns
 - [X] Triggers that change maps
+- [X] Dialogs
+    - [X] Basic window
+    - [X] Chain
+    - [X] Choices
+    - [X] Display lines character by character 
+    - [X] Blip blips

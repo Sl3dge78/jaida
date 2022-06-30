@@ -34,8 +34,8 @@ Sprite :: struct {
             }
         }
         if xform {
-            x0, y0 = Map.map_to_screen(context.game.camera_position, xform.pos - Vector2.{0.5, 0.5});
-            x1, y1 = Map.map_to_screen(context.game.camera_position, xform.pos + Vector2.{0.5, 0.5});
+            x0, y0 = Map.map_to_screen(global_game.camera_position, xform.pos - Vector2.{0.5, 0.5});
+            x1, y1 = Map.map_to_screen(global_game.camera_position, xform.pos + Vector2.{0.5, 0.5});
             sprite_x = xx xform.direction;
         }
         uv0, uv1 := get_uv_from_texture(*sprite_sheet, sprite_x, sprite_y);
@@ -59,7 +59,7 @@ Transform :: struct {
     update :: (using xform: *Transform, delta_time : float) {
         vel := Entity.get_component(entity, Velocity);
         if vel {
-            final_vel := Game.move_and_slide(pos, vel.vel, context.game.current_map);
+            final_vel := Game.move_and_slide(pos, vel.vel, global_game.current_map);
             xform.pos += final_vel;
 
             if length(final_vel) > 0 {
@@ -97,9 +97,9 @@ Transform :: struct {
                         xform.world_pos += world_movement;
                         xform.pos = new_pos;
                         if entity.tag == .PLAYER {
-                            Game.request_map_change(context.game.current_map, xform.world_pos);
+                            Game.request_map_change(global_game.current_map, xform.world_pos);
                         } else {
-                            Entity.change_inactive(entity, context.game.current_world_pos != xform.world_pos);
+                            Entity.change_inactive(entity, global_game.current_world_pos != xform.world_pos);
                         }
                     }
                 }
@@ -244,8 +244,8 @@ Hitbox :: struct {
     draw :: (using comp : *Hitbox) {
         Simp.set_shader_for_color(true);
         xform := Entity.get_component(entity, Transform);
-        x0, y0 := Map.map_to_screen(context.game.camera_position, xform.pos + o0);
-        x1, y1 := Map.map_to_screen(context.game.camera_position, xform.pos + o1);
+        x0, y0 := Map.map_to_screen(global_game.camera_position, xform.pos + o0);
+        x1, y1 := Map.map_to_screen(global_game.camera_position, xform.pos + o1);
         color : Vector4;
         if comp.tag == {
             case .NONE; {
@@ -433,14 +433,14 @@ Teleporter :: struct {
     new_pos : Vector2;
 
     update :: (using c : *Teleporter, delta_time : float) {
-        player := context.game.player;
+        player := global_game.player;
         player_xform := Entity.get_component(player, Transform);
         my_xform := Entity.get_component(entity, Transform);
         
         if Vector2i.from_vector2(player_xform.pos) == Vector2i.from_vector2(my_xform.pos) {
             if player_xform.world_pos != new_world_pos {
                 player_xform.world_pos = new_world_pos; // @Hack
-                if Game.request_map_change(context.game.current_map, new_world_pos) {
+                if Game.request_map_change(global_game.current_map, new_world_pos) {
                     player_xform.pos = new_pos;
                 } else {
                     // The map doesn't exist, to prevent checking every frame, delete ourselves.

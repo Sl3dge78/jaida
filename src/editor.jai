@@ -1,5 +1,3 @@
-#import "SDL";
-
 #add_context editor : Editor;
 
 Editor :: struct {
@@ -11,7 +9,7 @@ Editor :: struct {
     zoom :: 2.0;
 
     update :: () {
-        game := *context.game;
+        game := *global_game;
         editor := *context.editor;
         if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_LEFT] & .START {
             if editor.show_map {
@@ -61,7 +59,7 @@ Editor :: struct {
     }
 
     draw :: () {
-        using context.game;
+        using global_game;
         
         if context.editor.current_layer == 3 {
             Map.draw_layer(3, current_map, *map_texture, camera_position);
@@ -108,13 +106,13 @@ Editor :: struct {
     save_map :: (down : bool) {
         if down {
             
-            Map.save(context.game.current_map, Entity.get_component(context.game.player, Transform).world_pos);
+            Map.save(global_game.current_map, Entity.get_component(global_game.player, Transform).world_pos);
 
         }
     }
 
     load_map :: (down : bool) {
-        if down Map.load(context.game.current_map, Entity.get_component(context.game.player, Transform).world_pos);
+        if down Map.load(global_game.current_map, Entity.get_component(global_game.player, Transform).world_pos);
     }
 
     change_or_create_map :: (map : Map, pos : Vector2i) {
@@ -129,8 +127,8 @@ Editor :: struct {
     toggle_editor :: (down : bool) {
         if !down return;
 
-        context.game.state = ifx context.game.state == .GAME then Game.State.EDITOR else .GAME;
-        if context.game.state == .GAME {
+        global_game.state = ifx global_game.state == .GAME then Game.State.EDITOR else .GAME;
+        if global_game.state == .GAME {
             Basic.log("Editor off");
         } else {
             Basic.log("Editor on");
@@ -144,51 +142,51 @@ Editor :: struct {
 
     layer_prev :: (down : bool) {
         if !down return;
-        if context.game.state != .EDITOR return;
+        if global_game.state != .EDITOR return;
         if context.editor.current_layer > 0 then context.editor.current_layer -= 1;
         Basic.log("Layer : %", context.editor.current_layer);
     }
 
     layer_next :: (down : bool) {
         if !down return;
-        if context.game.state != .EDITOR return;
+        if global_game.state != .EDITOR return;
         if context.editor.current_layer < MAP_LAYERS-1 then context.editor.current_layer += 1;
         Basic.log("Layer : %", context.editor.current_layer);
     }
 
     map_left :: (down : bool) {
-        if context.game.state != .EDITOR return;
+        if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(context.game.player, Transform);
+            xform := Entity.get_component(global_game.player, Transform);
             xform.world_pos.x -= 1;
-            Editor.change_or_create_map(context.game.current_map, xform.world_pos);
+            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
         }
     }
 
     map_right :: (down : bool) {
-        if context.game.state != .EDITOR return;
+        if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(context.game.player, Transform);
+            xform := Entity.get_component(global_game.player, Transform);
             xform.world_pos.x += 1;
-            Editor.change_or_create_map(context.game.current_map, xform.world_pos);
+            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
         }
     }
 
     map_up :: (down : bool) {
-        if context.game.state != .EDITOR return;
+        if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(context.game.player, Transform);
+            xform := Entity.get_component(global_game.player, Transform);
             xform.world_pos.y += 1;
-            Editor.change_or_create_map(context.game.current_map, xform.world_pos);
+            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
         }
     }
 
     map_down :: (down : bool) {
-        if context.game.state != .EDITOR return;
+        if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(context.game.player, Transform);
+            xform := Entity.get_component(global_game.player, Transform);
             xform.world_pos.y -= 1;
-            Editor.change_or_create_map(context.game.current_map, xform.world_pos);
+            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
         }
     }
 }

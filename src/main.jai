@@ -20,8 +20,6 @@ round :: (x : float32) -> float32 {
 
 #placeholder DEVELOPER;
 
-
-
 #load "game.jai";
 #load "ecs.jai";
 #load "components.jai";

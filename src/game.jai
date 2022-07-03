@@ -120,16 +120,19 @@ Game :: struct {
             player.tag = .PLAYER;
             sprite := Entity.add_component(player, Sprite);
             sprite.sprite_sheet = blue_samurai_texture;
+            sprite.flags |= .USE_DIRECTION_AS_X;
 
             xform := Entity.add_component(player, Transform.{pos = .{14, 11}, world_pos = starting_world_pos});
             Entity.add_component(player, Animation);
             Entity.add_component(player, Velocity);
             Entity.add_component(player, Player);
-            Entity.add_component(player, Health);
+            //Entity.add_component(player, Health);
             Entity.add_component(player, Hitbox.{tag = .PLAYER});
         }
 
         create_enemy();
+        create_bush(.{18, 14}, .{0, 1});
+        create_bush(.{5, 11}, .{1, 1});
         create_teleporter(.{13, 13}, .{14.5, 9}, .{-1, 0});
 
         dialog := Entity.create();
@@ -219,7 +222,6 @@ Game :: struct {
         return true;
     }
 
-
     // @Temporary : Until we have entity loading.
     load_entities :: (map_pos : Vector2i) {
         if map_pos == .{-1, 0} { // Interior
@@ -228,48 +230,29 @@ Game :: struct {
         }
     }
 
-    /// Computes a new velocity that avoids map obstacles
-    move_and_slide :: (current_pos : Vector2, velocity : Vector2, map : Map) -> new_vel : Vector2 {
-        result : Vector2;
-        new_center_x := current_pos + xy(velocity.x, 0);
-        new_center_y := current_pos + xy(0, velocity.y);
-        // @Speed : Get the sign of the velocity? to check only 1 side
-        // @Hardcoded : Specify the size of the sprite?
-        // Try to move on x
-        if  Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{ 0.4,  0.0}) == 0 &&
-            Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{-0.4,  0.0}) == 0 &&
-            Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{ 0.4, -0.4}) == 0 &&
-            Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{-0.4, -0.4}) == 0 {
-                result.x += velocity.x;
-        }
-
-        if  Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{ 0.4,  0.0}) == 0 &&
-            Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{ 0.4, -0.5}) == 0 &&
-            Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{-0.4,  0.0}) == 0 &&
-            Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{-0.4, -0.5}) == 0 {
-                result.y += velocity.y;
-        }
-
-        return result;
-    }
-
     rect_intersects :: (a0 : Vector2, a1 : Vector2, b0 : Vector2, b1 : Vector2) -> bool {
         return a0.x < b1.x && a1.x > b0.x && a0.y < b1.y && a1.y > b0.y;
+    }
+
+    is_point_in_rect :: (p : Vector2, a1 : Vector2, a2 : Vector2) -> bool {
+        return p.x > a1.x && p.x < a2.y && p.y > a1.y && p.y < a2.y;
     }
 
     create_enemy :: () {
         e := Entity.create();
         sprite := Entity.add_component(e, Sprite);
         sprite.sprite_sheet = global_game.red_samurai_texture;
+        sprite.flags |= .USE_DIRECTION_AS_X;
         xform := Entity.add_component(e, Transform);
-        xform.pos.x = Random.random_get_within_range(0, MAP_WIDTH);
-        xform.pos.y = Random.random_get_within_range(0, MAP_HEIGHT);
-        xform.world_pos = global_game.current_world_pos;
+        xform.pos.x = 10; // Random.random_get_within_range(0, MAP_WIDTH);
+        xform.pos.y = 10; // Random.random_get_within_range(0, MAP_HEIGHT);
+        xform.world_pos = .{0,0};
         Entity.add_component(e, Enemy);
         Entity.add_component(e, Velocity);
         Entity.add_component(e, Animation);
         Entity.add_component(e, Hitbox.{tag = .ENEMY});
         Entity.add_component(e, Health);
+        Entity.add_component(e, Collision);
     }
 
     create_weapon :: (parent : *Entity, tag : Hitbox.Tag, time : float) -> *Entity {
@@ -281,6 +264,7 @@ Game :: struct {
 
         sprite := Entity.add_component(weapon, Sprite);
         sprite.sprite_sheet = global_game.katana_texture;
+        sprite.flags |= .USE_DIRECTION_AS_X;
 
         hitbox := Entity.add_component(weapon, Hitbox);
         hitbox.look_for = tag;
@@ -320,6 +304,21 @@ Game :: struct {
         interactor.flags |= .SHOULD_DELETE; // @Hack: is it even a hack??
     }
 
+    create_bush :: (pos : Vector2, world_pos : Vector2i) {
+        ett := Entity.create();
+        xform := Entity.add_component(ett, Transform);
+        xform.pos = pos;
+        xform.world_pos = world_pos;
+        Entity.add_component(ett, Collision.{p0 = .{-0.5, -0.5}, p1 = .{0.5, 0.5}});
+        Entity.add_component(ett, Health.{hp = 1});
+        Entity.add_component(ett, Hitbox.{tag = .ENEMY});
+        sprite := Entity.add_component(ett, Sprite);
+        sprite.sprite_sheet = *global_game.map_texture;
+        x, y := tile_id_to_xy(*global_game.map_texture, 1895);
+        sprite.sprite_x = x;
+        sprite.sprite_y = y;
+        
+    }
 }
 
 global_game : Game;

@@ -67,11 +67,14 @@ Map :: struct {
     }
 
     // @Debug : Bounds check?
-    get_collision_at :: (using map : Map, pos : Vector2) -> u32 {
+    get_collision_at :: (using map : Map, pos : Vector2, entity : *Entity = null) -> u32 {
         x : int = xx round(pos.x);
         if x < 0 || x >= MAP_WIDTH  then return 1;
         y : int = xx round(pos.y);
         if y < 0 || y >= MAP_HEIGHT then return 1;
+
+       
+
         return map.tiles[COLLISION_LAYER][x + y * MAP_WIDTH];
     }
 

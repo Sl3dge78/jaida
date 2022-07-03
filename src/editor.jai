@@ -17,6 +17,7 @@ Editor :: struct {
                     tile_x := game.mouse_x / TILE_SIZE / editor.zoom - editor.offset_x;
                     tile_y := game.mouse_y / TILE_SIZE / editor.zoom - editor.offset_y;
                     editor.selected_tile = xy_to_tile_id(*game.map_texture, xx tile_x, xx tile_y);
+                    Basic.log("%", editor.selected_tile);
                 }
             }
         }

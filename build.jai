@@ -68,8 +68,8 @@ build :: () {
     options.output_path = "bin";
     options.intermediate_path = "tmp";
     options.output_type = .EXECUTABLE;
-    options.emit_debug_info = .DEFAULT;
-    options.backend = .X64;
+    //options.emit_debug_info = .DEFAULT;
+    //options.backend = .X64;
     
     is_lsp := false;
     lsp_message : (*Compiler.Message) -> void;

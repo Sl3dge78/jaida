@@ -17,6 +17,11 @@ Component :: struct {
 Sprite :: struct {
     using component : Component;
 
+    Flags :: enum_flags {
+        USE_DIRECTION_AS_X;
+    };
+
+    flags : Flags;
     sprite_sheet : Simp.Texture = ---; 
     x0, y0, x1, y1 : int;
     sprite_x : u32;
@@ -31,12 +36,14 @@ Sprite :: struct {
                 case .WALKING;   sprite_y = 6 - cast(u32)(animation.time * 4.0); 
                 case .ATTACKING; sprite_y = 2;
                 case .WINDUP;    sprite_y = xx ifx (xform.direction == .SOUTH) then 5 else 3;
-            }
+            }    
         }
         if xform {
             x0, y0 = Map.map_to_screen(global_game.camera_position, xform.pos - Vector2.{0.5, 0.5});
             x1, y1 = Map.map_to_screen(global_game.camera_position, xform.pos + Vector2.{0.5, 0.5});
-            sprite_x = xx xform.direction;
+            if sprite.flags & .USE_DIRECTION_AS_X {
+                sprite_x = xx xform.direction;
+            }
         }
         uv0, uv1 := get_uv_from_texture(*sprite_sheet, sprite_x, sprite_y);
         Simp.set_shader_for_images(*sprite_sheet);
@@ -59,10 +66,9 @@ Transform :: struct {
     update :: (using xform: *Transform, delta_time : float) {
         vel := Entity.get_component(entity, Velocity);
         if vel {
-            final_vel := Game.move_and_slide(pos, vel.vel, global_game.current_map);
-            xform.pos += final_vel;
+            final_vel := move_and_slide(xform, vel.vel, global_game.current_map);
 
-            if length(final_vel) > 0 {
+            if final_vel.x != 0 || final_vel.y != 0 {
                 anim := Entity.get_component(entity, Animation);
 
                 if abs(final_vel.x) > abs(final_vel.y) {
@@ -105,6 +111,56 @@ Transform :: struct {
                 }
             }
         }
+    }
+
+    /// Computes a new velocity that avoids map obstacles
+    move_and_slide :: (xform : *Transform, velocity : Vector2, map : Map) -> Vector2{
+        result : Vector2;
+        new_center_x := xform.pos + xy(velocity.x, 0);
+        new_center_y := xform.pos + xy(0, velocity.y);
+
+        // @Speed : Get the sign of the velocity? to check only 1 side
+        // @Hardcoded : Specify the size of the sprite?
+        xp1 := new_center_x + Vector2.{ 0.4,  0.0};
+        xp0 := new_center_x + Vector2.{-0.4, -0.5};
+        if Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{ 0.4,  0.0}, xform.entity) == 0 &&
+           Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{ 0.4, -0.5}, xform.entity) == 0 &&
+           Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{-0.4,  0.0}, xform.entity) == 0 &&
+           Map.get_collision_at(global_game.current_map, new_center_x + Vector2.{-0.4, -0.5}, xform.entity) == 0 {
+            do_move := true;
+            for Component_Manager.get_component_storage(Collision, false) {
+                if it.entity == xform.entity continue;
+                it_xform := Entity.get_component(it.entity, Transform);
+                is_in_rect := Game.rect_intersects(xp0, xp1, it_xform.pos + it.p0, it_xform.pos + it.p1);
+                if is_in_rect {
+                    do_move = false;
+                    break;
+                }
+            }
+            if do_move then result.x += velocity.x;
+        }
+
+        yp1 := new_center_y + Vector2.{ 0.4,  0.0};
+        yp0 := new_center_y + Vector2.{-0.4, -0.5};
+        if Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{ 0.4,  0.0}, xform.entity) == 0 &&
+           Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{-0.4,  0.0}, xform.entity) == 0 &&
+           Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{ 0.4, -0.5}, xform.entity) == 0 &&
+           Map.get_collision_at(global_game.current_map, new_center_y + Vector2.{-0.4, -0.5}, xform.entity) == 0 {
+            do_move := true;
+            for Component_Manager.get_component_storage(Collision, false) {
+                if it.entity == xform.entity continue;
+                it_xform := Entity.get_component(it.entity, Transform);
+                is_in_rect := Game.rect_intersects(yp0, yp1, it_xform.pos + it.p0, it_xform.pos + it.p1);
+                if is_in_rect {
+                    do_move = false;
+                    break;
+                }
+            }
+            if do_move then result.y += velocity.y;
+        }   
+
+        xform.pos += result;
+        return result;
     }
 } @Component @Update
 
@@ -425,9 +481,8 @@ Enemy :: struct {
     }
 } @Component @Update
 
-
 Teleporter :: struct {
-    using comp : Component;
+    using component : Component;
 
     new_world_pos : Vector2i;
     new_pos : Vector2;
@@ -454,13 +509,18 @@ Teleporter :: struct {
     }
 } @Component @Update
 
-
 Interact :: struct {
-    using c : Component;
+    using component : Component;
 
     hit :: (using i : *Interact) {
         Dialog.open(tree);
     }
+} @Component
+
+Collision :: struct {
+    using component : Component;
+    p0 : Vector2 = .{-0.4, -0.5};
+    p1 : Vector2 = .{0.4, 0.0};
 } @Component
 
 #scope_file

@@ -3,6 +3,7 @@
 
 
 # Inbox 
+- [ ] Sort entities in y
 - [ ] Il faut que le perso change de direction, MEME quand on est colles a un mur
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
 - [ ] Have some components that update not every frame
@@ -11,8 +12,10 @@
     - (Dialog) queue x blipblips
 
 ## System
+- [ ] Keys & doors
 - [ ] Puzzles (push blocks?)
-- [ ] (Collision) Detect them with NPCs
+- [ ] HUD with health
+- [ ] Enemy health?
 
 ## Content
 - [ ] Dungeon 
@@ -23,6 +26,8 @@
 - [ ] Pathfinding ?
 
 # Done
+- [X] (Collision) Detect them with NPCs
+- [X] Destructible element
 - [X] Entities stay alive for 1 frame when changing map. Maybe do the map change at the end of the frame to prevent that?
 - [X] Combat 1.0
 - [X] Animations

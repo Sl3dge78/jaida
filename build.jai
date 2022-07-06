@@ -8,6 +8,7 @@ Compiler :: #import "Compiler";
 component_list : [..]*Compiler.Code_Struct;
 update_component_list : [..]*Compiler.Code_Struct;
 draw_component_list : [..]*Compiler.Code_Struct;
+hit_component_list : [..]*Compiler.Code_Struct;
 once := false;
 
 handle_components :: (message : *Compiler.Message) {
@@ -25,6 +26,9 @@ handle_components :: (message : *Compiler.Message) {
                 }
                 if note.text == "Draw" {
                     Basic.array_add(*draw_component_list, cast(*Compiler.Code_Struct)decl.expression.expression);
+                }
+                if note.text == "Hit" {
+                    Basic.array_add(*hit_component_list, cast(*Compiler.Code_Struct)decl.expression.expression);
                 }
             }
         }
@@ -54,6 +58,13 @@ handle_components :: (message : *Compiler.Message) {
                     Basic.print_to_builder(*builder, "%, ", it.defined_type.name);
                 }
                 Basic.print_to_builder(*builder, "];\n");
+
+                Basic.print_to_builder(*builder, "HIT_COMPONENT_LIST :: Type.[");
+                for hit_component_list {
+                    Basic.print_to_builder(*builder, "%, ", it.defined_type.name);
+                }
+                Basic.print_to_builder(*builder, "];\n");
+
                 add_build_string(Basic.builder_to_string(*builder), message.workspace);
                 once = true;
             }

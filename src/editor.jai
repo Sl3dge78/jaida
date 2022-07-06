@@ -98,22 +98,19 @@ Editor :: struct {
             Simp.clear_scissor();
         }
         
-        xform := Entity.get_component(player, Transform);
-        status_line := Basic.tprint("% - %", xform.pos, xform.world_pos);
+        status_line := Basic.tprint("% - %", global_game.player.position, global_game.player.world_pos);
 
         Simp.draw_text(small_font, 0, screen_height - 16, status_line);
     }
 
     save_map :: (down : bool) {
         if down {
-            
-            Map.save(global_game.current_map, Entity.get_component(global_game.player, Transform).world_pos);
-
+            Map.save(global_game.current_map, global_game.player.world_pos);
         }
     }
 
     load_map :: (down : bool) {
-        if down Map.load(global_game.current_map, Entity.get_component(global_game.player, Transform).world_pos);
+        if down Map.load(global_game.current_map, global_game.player.world_pos);
     }
 
     change_or_create_map :: (map : Map, pos : Vector2i) {
@@ -159,36 +156,32 @@ Editor :: struct {
     map_left :: (down : bool) {
         if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(global_game.player, Transform);
-            xform.world_pos.x -= 1;
-            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
+            global_game.player.world_pos.x -= 1;
+            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
         }
     }
 
     map_right :: (down : bool) {
         if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(global_game.player, Transform);
-            xform.world_pos.x += 1;
-            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
+            global_game.player.world_pos.x += 1;
+            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
         }
     }
 
     map_up :: (down : bool) {
         if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(global_game.player, Transform);
-            xform.world_pos.y += 1;
-            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
+            global_game.player.world_pos.y += 1;
+            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
         }
     }
 
     map_down :: (down : bool) {
         if global_game.state != .EDITOR return;
         if down {
-            xform := Entity.get_component(global_game.player, Transform);
-            xform.world_pos.y -= 1;
-            Editor.change_or_create_map(global_game.current_map, xform.world_pos);
+            global_game.player.world_pos.y -= 1;
+            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
         }
     }
 

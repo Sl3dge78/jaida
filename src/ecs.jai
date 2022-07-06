@@ -2,6 +2,7 @@
 #placeholder COMPONENT_LIST;
 #placeholder UPDATE_COMPONENT_LIST;
 #placeholder DRAW_COMPONENT_LIST;
+#placeholder HIT_COMPONENT_LIST;
 
 using B_Array;
 

@@ -218,7 +218,7 @@ Health :: struct {
     hp : s32 = 4;
     cooldown : float;
 
-    hit :: (using h : *Health) {
+    on_hit :: (using self: *Health, other: *Entity) {
         if cooldown > 0 then return;
         hp -= 1;
         cooldown = 1.0;
@@ -232,7 +232,7 @@ Health :: struct {
     update :: (using h : *Health, delta_time : float) {
         if cooldown > 0 then cooldown -= delta_time;
     }
-} @Component @Update
+} @Component @Update @Hit
 
 Hitbox :: struct {
     Tag :: enum {
@@ -248,7 +248,7 @@ Hitbox :: struct {
     o0 : Vector2; // Relative to current center but oriented
     o1 : Vector2; 
 
-    tag: Tag = .NONE;     // Will be looked at by hitboxes. Used to receive 
+    tag: Tag = .NONE;       // Will be looked at by hitboxes. Used to receive 
     look_for : Tag = .NONE; // What kind of hitboxes to search. Used to give
 
     update :: (using comp : *Hitbox, delta_time : float) {
@@ -284,15 +284,14 @@ Hitbox :: struct {
             other_xform := Entity.get_component(it.entity, Transform);
             collides := Game.rect_intersects(o0 + xform.pos, o1 + xform.pos, it.o0 + other_xform.pos, it.o1 + other_xform.pos);
             if collides {
-                if look_for == {
-                    case .PLAYER; #through;
-                    case .ENEMY;
-                        hp := Entity.get_component(it.entity, Health);
-                        if hp then Health.hit(hp);
-                    case .INTERACT;
-                        inter := Entity.get_component(it.entity, Interact);
-                        if inter then Interact.hit(inter);
-                }
+                #insert #run -> string {
+                    builder : Basic.String_Builder;
+                    for hit_comp : HIT_COMPONENT_LIST { 
+                        Basic.print_to_builder(*builder, "{\n\thit_component := Entity.get_component(it.entity, %);\n", hit_comp);
+                        Basic.print_to_builder(*builder, "\tif hit_component then %.on_hit(hit_component, entity);\n}\n", hit_comp);
+                    }
+                    return Basic.builder_to_string(*builder);
+                };
             }
         }
     }
@@ -306,9 +305,9 @@ Hitbox :: struct {
         if comp.tag == {
             case .NONE; {
                 if comp.look_for == {
-                    case .ENEMY;    color = rgba( 1, .4, .4, .4);
-                    case .PLAYER;   color = rgba(.4,  1, .4, .4);
-                    case .INTERACT; color = rgba(.4, .4, .4, .4);
+                    case .ENEMY;    color = rgba( 1, .4, .4, .2);
+                    case .PLAYER;   color = rgba(.4,  1, .4, .2);
+                    case .INTERACT; color = rgba(.4, .4, .4, .2);
                 }
             }
             case .ENEMY; color = rgba(1, .2, .2, 0.4);
@@ -383,6 +382,7 @@ Player :: struct {
         ATTACKING;
     };
     attack_time : float;
+    nb_keys : int = 0;
 
     update :: (using player : *Player, delta_time : float) {
         Component.require_component(Velocity);
@@ -512,16 +512,30 @@ Teleporter :: struct {
 Interact :: struct {
     using component : Component;
 
-    hit :: (using i : *Interact) {
+    on_hit :: (using self : *Interact, other: *Entity) {
+        Basic.log("Hello");
         Dialog.open(tree);
     }
-} @Component
+} @Component @Hit
 
 Collision :: struct {
     using component : Component;
     p0 : Vector2 = .{-0.4, -0.5};
     p1 : Vector2 = .{0.4, 0.0};
 } @Component
+
+Key :: struct { 
+    using component: Component;
+
+    on_hit :: (using self: *Key, other: *Entity) {
+        Basic.log("Hit!");
+        player := Entity.get_component(other, Player);
+        if !player then return;
+        player.nb_keys += 1;
+        self.entity.flags |= .SHOULD_DELETE;
+    }
+
+} @Component @Hit
 
 #scope_file
 tree := Dialog.Node.[

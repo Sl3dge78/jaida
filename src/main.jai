@@ -21,8 +21,12 @@ round :: (x : float32) -> float32 {
 #placeholder DEVELOPER;
 
 #load "game.jai";
-#load "ecs.jai";
-#load "components.jai";
+#if 0 {
+    #load "ecs.jai";
+    #load "components.jai";
+} else {
+    #load "entities.jai";
+}
 #load "keymaps.jai";
 #load "sprite.jai";
 #load "map.jai";
@@ -103,7 +107,6 @@ main :: () {
         }
 
         Game.update(delta_time);
-        Component_Manager.cleanup();
         Game.draw();
 
         Simp.swap_buffers(window);

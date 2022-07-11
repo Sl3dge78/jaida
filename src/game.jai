@@ -39,6 +39,8 @@ load_texture_no_filter :: (tex : *Simp.Texture, path : string) -> bool {
     return result;
 }
 
+#add_context game : Game;
+
 Game :: struct {
     State :: enum {
         GAME;
@@ -96,7 +98,7 @@ Game :: struct {
     second : float;
 
     load :: () {
-        using global_game;
+        using context.game;
 
         Random.random_seed(cast(u64) Basic.get_time());
 
@@ -117,20 +119,21 @@ Game :: struct {
         starting_world_pos :: Vector2i.{-1, 0};
         player.sprite_sheet = *blue_samurai_texture;
         player.position = .{14, 11};
+        player.world_pos = starting_world_pos;
 
 
         request_map_change(current_map, starting_world_pos);
     }
 
     update :: (delta_time : float32) {
-        game := *global_game;
+        game := *context.game;
 
         game.second += delta_time;
         if game.second > 1.0 then game.second -= 1.0;
 
         if game.state == { 
             case .GAME;
-                Player.simulate(*global_game.player, delta_time);
+                Player.simulate(*context.game.player, delta_time);
                 for game.entities {
                     if it.tag == .ENEMY {
                         Enemy.simulate(xx it, delta_time);
@@ -148,10 +151,17 @@ Game :: struct {
                 Dialog.update(delta_time);
             }
         }
+
+        for game.entities {
+            if it.flags & .SHOULD_DELETE {
+                Basic.free(it);
+                remove it;
+            }
+        }
     }
 
     draw :: () {
-        game := *global_game;
+        game := *context.game;
         if game.state == .EDITOR {
             Simp.clear_render_target(0.5, 0, 0, 1);
         } else {
@@ -162,9 +172,9 @@ Game :: struct {
 
         layer_separator :: (layer : int) {
             #if DEVELOPER {
-                if global_game.state == .EDITOR && context.editor.current_layer > layer {
+                if context.game.state == .EDITOR && context.editor.current_layer > layer {
                     Simp.set_shader_for_color(true);
-                    Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx global_game.screen_width, y1 = xx global_game.screen_height, color = .{1, 1, 1, 0.5});
+                    Simp.immediate_quad(x0 = xx 0, y0 = xx 0, x1 = xx context.game.screen_width, y1 = xx context.game.screen_height, color = .{1, 1, 1, 0.5});
                 }
             }
         }
@@ -173,7 +183,7 @@ Game :: struct {
         Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(1);
 
-        Entity.draw(*global_game.player.e);
+        Entity.draw(*context.game.player.e);
 
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(2);
@@ -188,20 +198,18 @@ Game :: struct {
     }
 
     request_map_change :: (current_map : Map, map_pos : Vector2i) -> bool {
-        Basic.log("%", map_pos);
+        Basic.log("request: %", map_pos);
         success := Map.load(current_map, map_pos);
         if !success return false;
-        global_game.current_world_pos = map_pos;
+        context.game.current_world_pos = map_pos;
 
-        for global_game.entities {
+        for context.game.entities {
             if it.world_pos != map_pos {
-                Basic.free(it);
-                remove it;
+                it.flags |= .SHOULD_DELETE;
             }
         }
 
         load_entities(map_pos);
-        global_game.player.world_pos = map_pos;
         return true;
     }
 
@@ -213,18 +221,18 @@ Game :: struct {
                 tp1.world_pos = .{-1, 0};
                 tp1.new_pos = .{13, 12};
                 tp1.new_world_pos = .{0, 0};
-                Basic.array_add(*global_game.entities, tp1);
+                Basic.array_add(*context.game.entities, tp1);
                 tp2 := Basic.New(Teleporter);
                 << tp2 = << tp1;
                 tp2.position.x = 15;
-                Basic.array_add(*global_game.entities, tp2);
+                Basic.array_add(*context.game.entities, tp2);
         } else if map_pos == .{0, 0} {
                 tp := Basic.New(Teleporter);
                 tp.position = .{13, 13};
                 tp.world_pos = .{0, 0};
                 tp.new_pos = .{14.5, 9};
                 tp.new_world_pos = .{-1, 0};
-                Basic.array_add(*global_game.entities, tp);
+                Basic.array_add(*context.game.entities, tp);
         }
     }
 
@@ -386,4 +394,3 @@ Game :: struct {
     }
 }
 
-global_game : Game;

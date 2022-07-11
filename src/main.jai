@@ -65,7 +65,7 @@ main :: () {
     window := Window_Creation.create_window(1280, 720, "Zelda!");
 
     // Note: Editor is added to the context where they are defined.
-    game_state := *global_game;
+    game_state := *context.game;
 
     requested_spec := SDL_AudioSpec.{
         freq = 44100,
@@ -81,7 +81,7 @@ main :: () {
     game_state.audio_device = SDL_OpenAudioDevice(null, 0, *requested_spec, *obtained, 0);
     Basic.assert(game_state.audio_device != 0);
     defer SDL_CloseAudioDevice(game_state.audio_device);
-    SDL_PauseAudioDevice(global_game.audio_device, 0);
+    SDL_PauseAudioDevice(context.game.audio_device, 0);
 
     game_state.screen_width, game_state.screen_height = Simp.get_render_dimensions(window);
     Simp.set_render_target(window);

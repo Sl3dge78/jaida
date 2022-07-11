@@ -30,7 +30,7 @@ Dialog :: struct {
     }
 
     update :: (delta_time : float) {
-        using global_game;
+        using context.game;
 
         current : *Node = *current_dialog_tree[current_dialog_node];
 
@@ -43,7 +43,7 @@ Dialog :: struct {
             current_char : u8;
             for i : first_line..last_line - 1 {
                 line := current.lines[i];
-                position_in_line := global_game.dialog_nb_chars - nb_chars;
+                position_in_line := context.game.dialog_nb_chars - nb_chars;
                 if position_in_line <= line.count - 1 {
                     current_char = line[position_in_line];
                     char_timer += get_char_timer(current_char);
@@ -64,7 +64,7 @@ Dialog :: struct {
 
         if Input.input_button_states[#char "E"] & .START {
             if current.jumps.count == 0 || (current.jumps.count > 0 && current.jumps[current_choice] == -1) {
-                global_game.state = .GAME; // End the dialog
+                context.game.state = .GAME; // End the dialog
                 current_choice = 0;
                 dialog_nb_chars = 0;
                 char_timer = -1;
@@ -99,25 +99,25 @@ Dialog :: struct {
     draw :: () {
         bg : *Simp.Texture;
         title := false;
-        current_node : *Node = *global_game.current_dialog_tree[global_game.current_dialog_node];
+        current_node : *Node = *context.game.current_dialog_tree[context.game.current_dialog_node];
         shadow_distance :: ZOOM * 2;
 
         
         if !current_node.has_title {
-            bg = *global_game.dialogbox_notitle_texture;
+            bg = *context.game.dialogbox_notitle_texture;
         } else {
-            bg = *global_game.dialogbox_texture;
+            bg = *context.game.dialogbox_texture;
         }
         Simp.set_shader_for_images(bg);
         w := ZOOM * bg.width;
         h := ZOOM * bg.height;
 
-        x0 := (global_game.screen_width / 2.0) - w/2.0; 
-        y0 := (global_game.screen_height * .05);
+        x0 := (context.game.screen_width / 2.0) - w/2.0; 
+        y0 := (context.game.screen_height * .05);
         Simp.immediate_quad(x0 + shadow_distance, y0 - shadow_distance, x0 + w + shadow_distance, y0 + h - shadow_distance, .{0,0,0,0.5}); 
         Simp.immediate_quad(x0, y0, x0 + w, y0 + h, .{1,1,1,1}); 
         
-        font := global_game.font;
+        font := context.game.font;
         margin_x := 16; // @Hardcoded
 
         // Title
@@ -136,7 +136,7 @@ Dialog :: struct {
         text_y0 := y0 + (5 * line_height) - y_space;
 
         // We'll stop drawing once we have reached this number
-        char_left := global_game.dialog_nb_chars;
+        char_left := context.game.dialog_nb_chars;
         for i : first_line..last_line - 1 {
             line := current_node.lines[i];
             if line.count > char_left {
@@ -152,13 +152,13 @@ Dialog :: struct {
         
         // Choice box
         if current_node.jumps.count > 1 {
-            choice_w := global_game.dialogbox_choice_texture.width * ZOOM;
-            choice_h := global_game.dialogbox_choice_texture.height * ZOOM;
+            choice_w := context.game.dialogbox_choice_texture.width * ZOOM;
+            choice_h := context.game.dialogbox_choice_texture.height * ZOOM;
             choice_padding := choice_w + 8;
             choice_x0 := (x0 + w) - (current_node.jumps.count * choice_padding) - 8;
             choice_y0 := y0 + 8;
             for current_node.jumps {
-                Simp.set_shader_for_images(*global_game.dialogbox_choice_texture);
+                Simp.set_shader_for_images(*context.game.dialogbox_choice_texture);
                 x := choice_x0 + it_index * choice_padding;
                 // Shadow
                 Simp.immediate_quad(x + shadow_distance, choice_y0 - shadow_distance, x + choice_w + shadow_distance, choice_y0 + choice_h - shadow_distance, .{0, 0, 0, 0.5});
@@ -166,11 +166,11 @@ Dialog :: struct {
                 Simp.immediate_quad(x, choice_y0, x + choice_w, choice_y0 + choice_h, .{1, 1, 1, 1});
                 // Text
                 color : Vector4 = Game.Palette.BLACK;
-                if global_game.current_choice == it_index  { 
-                    if (global_game.second * 2.0) > 1.0 {
-                        color = lerp(Game.Palette.BLACK, Game.Palette.DARK_ORANGE, global_game.second);
+                if context.game.current_choice == it_index  { 
+                    if (context.game.second * 2.0) > 1.0 {
+                        color = lerp(Game.Palette.BLACK, Game.Palette.DARK_ORANGE, context.game.second);
                     } else {
-                        color = lerp(Game.Palette.DARK_ORANGE, Game.Palette.BLACK, global_game.second);
+                        color = lerp(Game.Palette.DARK_ORANGE, Game.Palette.BLACK, context.game.second);
                     }
                 }
                 Simp.draw_text(font, xx (x + 6 * ZOOM), xx (choice_y0 + 7 * ZOOM), current_node.lines[it_index + last_line], color);
@@ -179,8 +179,8 @@ Dialog :: struct {
     }
 
     open :: (tree : []Node, first : u8 = 0) {
-        global_game.state = .DIALOG;
-        global_game.current_dialog_tree = tree;
-        global_game.current_dialog_node = first;
+        context.game.state = .DIALOG;
+        context.game.current_dialog_tree = tree;
+        context.game.current_dialog_node = first;
     }
 }

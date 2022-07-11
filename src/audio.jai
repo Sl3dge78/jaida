@@ -22,7 +22,7 @@ Audio_Stream :: struct {
     }
 
     mix_and_play_immediate :: (stream : *Audio_Stream, volume : s8, device : SDL_AudioDeviceID) {
-        SDL_ClearQueuedAudio(global_game.audio_device);
+        SDL_ClearQueuedAudio(context.game.audio_device);
         mixed : *void = Basic.talloc(stream.len);
         memset(mixed, 0, stream.len);
         SDL_MixAudioFormat(mixed, stream.data, AUDIO_S16, stream.len, volume);

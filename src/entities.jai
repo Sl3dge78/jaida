@@ -9,6 +9,11 @@ Entity :: struct {
     };
     tag : Tag;
 
+    Flag :: enum_flags {
+        SHOULD_DELETE;
+    };
+    flags : Flag;
+
     position : Vector2;
     direction : Direction;
     world_pos : Vector2i;
@@ -19,8 +24,8 @@ Entity :: struct {
 
     draw :: (using e: *Entity) {
         if !sprite_sheet then return;
-        x0, y0 := Map.map_to_screen(global_game.camera_position, position - Vector2.{0.5, 0.5});
-        x1, y1 := Map.map_to_screen(global_game.camera_position, position + Vector2.{0.5, 0.5});
+        x0, y0 := Map.map_to_screen(context.game.camera_position, position - Vector2.{0.5, 0.5});
+        x1, y1 := Map.map_to_screen(context.game.camera_position, position + Vector2.{0.5, 0.5});
         uv0, uv1 := get_uv_from_texture(sprite_sheet, sprite);
         Simp.set_shader_for_images(sprite_sheet);
         Simp.immediate_quad(
@@ -76,7 +81,7 @@ Player :: struct {
                 anim_time += delta_time;
                 if anim_time > 1.0 then anim_time = 0;
                 sprite.y = 6 - cast(s32)(anim_time * 4.0); 
-                Game.move_and_slide(*e, norm_vel, global_game.current_map);
+                Game.move_and_slide(*e, norm_vel, context.game.current_map);
             } else {
                 sprite.y = 6;
             }
@@ -119,7 +124,7 @@ Enemy :: struct {
     DEAGGRO_DIST :: 10;
 
     simulate :: (using enemy: *Enemy, delta_time: float) {
-        player := global_game.player;
+        player := context.game.player;
         distance := Math.distance(player.position, position);
 
         if distance > DEAGGRO_DIST || player.world_pos != world_pos {
@@ -142,7 +147,7 @@ Enemy :: struct {
                 }
                 dir := Math.unit_vector(player.position - position);
                 vel := dir * delta_time * 3.0;
-                Game.move_and_slide(*e, vel, global_game.current_map);
+                Game.move_and_slide(*e, vel, context.game.current_map);
             }
             case .WINDUP; {
                 combat_timer -= delta_time;
@@ -168,22 +173,22 @@ Teleporter :: struct {
     new_pos : Vector2;
 
     simulate :: (using teleporter: *Teleporter, delta_time: float) {
-        player := global_game.player;
-        
+        player := *context.game.player;
         if Vector2i.from_vector2(player.position) == Vector2i.from_vector2(position) {
-            Basic.log("%", new_world_pos);
+            Basic.log("Before: Player: %, New: %", player.world_pos, new_world_pos);
             if player.world_pos != new_world_pos {
-                if Game.request_map_change(global_game.current_map, new_world_pos) {
-                    player.position = new_pos;
+                Basic.log("Before: Player: %, New: %", player.world_pos, new_world_pos);
+                if Game.request_map_change(context.game.current_map, new_world_pos) {
+                    player.world_pos = new_world_pos;
+                    Basic.log("After: Player: %, New: %", player.world_pos, new_world_pos);
                 } else {
                     // The map doesn't exist, to prevent checking every frame, delete ourselves.
                     Basic.log_error("Map % doesn't exist!", new_world_pos);
                     // @Todo
                     // entity.flags |= .SHOULD_DELETE;
                 }
-            } else {
-                player.position = new_pos;
-            }
+            } 
+            player.position = new_pos;
         }
     }
 }

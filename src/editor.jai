@@ -9,7 +9,7 @@ Editor :: struct {
     zoom :: 2.0;
 
     update :: () {
-        game := *global_game;
+        game := *context.game;
         editor := *context.editor;
         if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_LEFT] & .START {
             if editor.show_map {
@@ -60,7 +60,7 @@ Editor :: struct {
     }
 
     draw :: () {
-        using global_game;
+        using context.game;
         
         if context.editor.current_layer == 3 {
             Map.draw_layer(3, current_map, *map_texture, camera_position);
@@ -98,19 +98,19 @@ Editor :: struct {
             Simp.clear_scissor();
         }
         
-        status_line := Basic.tprint("% - %", global_game.player.position, global_game.player.world_pos);
+        status_line := Basic.tprint("% - %", context.game.player.position, context.game.player.world_pos);
 
         Simp.draw_text(small_font, 0, screen_height - 16, status_line);
     }
 
     save_map :: (down : bool) {
         if down {
-            Map.save(global_game.current_map, global_game.player.world_pos);
+            Map.save(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     load_map :: (down : bool) {
-        if down Map.load(global_game.current_map, global_game.player.world_pos);
+        if down Map.load(context.game.current_map, context.game.player.world_pos);
     }
 
     change_or_create_map :: (map : Map, pos : Vector2i) {
@@ -125,8 +125,8 @@ Editor :: struct {
     toggle_editor :: (down : bool) {
         if !down return;
 
-        global_game.state = ifx global_game.state == .GAME then Game.State.EDITOR else .GAME;
-        if global_game.state == .GAME {
+        context.game.state = ifx context.game.state == .GAME then Game.State.EDITOR else .GAME;
+        if context.game.state == .GAME {
             Basic.log("Editor off");
         } else {
             Basic.log("Editor on");
@@ -135,60 +135,60 @@ Editor :: struct {
 
     toggle_editor_map :: (down : bool) {
         if !down return;
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         context.editor.show_map = !context.editor.show_map;
     }
 
     layer_prev :: (down : bool) {
         if !down return;
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if context.editor.current_layer > 0 then context.editor.current_layer -= 1;
         Basic.log("Layer : %", context.editor.current_layer);
     }
 
     layer_next :: (down : bool) {
         if !down return;
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if context.editor.current_layer < MAP_LAYERS-1 then context.editor.current_layer += 1;
         Basic.log("Layer : %", context.editor.current_layer);
     }
 
     map_left :: (down : bool) {
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if down {
-            global_game.player.world_pos.x -= 1;
-            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
+            context.game.player.world_pos.x -= 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     map_right :: (down : bool) {
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if down {
-            global_game.player.world_pos.x += 1;
-            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
+            context.game.player.world_pos.x += 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     map_up :: (down : bool) {
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if down {
-            global_game.player.world_pos.y += 1;
-            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
+            context.game.player.world_pos.y += 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     map_down :: (down : bool) {
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if down {
-            global_game.player.world_pos.y -= 1;
-            Editor.change_or_create_map(global_game.current_map, global_game.player.world_pos);
+            context.game.player.world_pos.y -= 1;
+            Editor.change_or_create_map(context.game.current_map, context.game.player.world_pos);
         }
     }
 
     fill_layer :: (down : bool) {
-        if global_game.state != .EDITOR return;
+        if context.game.state != .EDITOR return;
         if down {
-            for * global_game.current_map.tiles[context.editor.current_layer] {
+            for * context.game.current_map.tiles[context.editor.current_layer] {
                 << it = context.editor.selected_tile;
             }
         }

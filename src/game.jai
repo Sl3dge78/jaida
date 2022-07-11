@@ -135,11 +135,13 @@ Game :: struct {
             case .GAME;
                 Player.simulate(*context.game.player, delta_time);
                 for game.entities {
-                    if it.tag == .ENEMY {
-                        Enemy.simulate(xx it, delta_time);
-                    }
-                    if it.tag == .TELEPORTER {
-                        Teleporter.simulate(xx it, delta_time);
+                    if it.tag == {
+                        case .ENEMY; 
+                            Enemy.simulate(xx it, delta_time);
+                        case .TELEPORTER;
+                            Teleporter.simulate(xx it, delta_time);
+                        case .WEAPON;
+                            Weapon.simulate(xx it, delta_time);
                     }
                 }
             case .EDITOR; {
@@ -184,6 +186,9 @@ Game :: struct {
         layer_separator(1);
 
         Entity.draw(*context.game.player.e);
+        for game.entities {
+            Entity.draw(it);
+        }
 
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(2);
@@ -215,24 +220,13 @@ Game :: struct {
 
     // @Temporary : Until we have entity loading.
     load_entities :: (map_pos : Vector2i) {
+
         if map_pos == .{-1, 0} { // Interior
-                tp1 := Basic.New(Teleporter);
-                tp1.position = .{14, 8};
-                tp1.world_pos = .{-1, 0};
-                tp1.new_pos = .{13, 12};
-                tp1.new_world_pos = .{0, 0};
-                Basic.array_add(*context.game.entities, tp1);
-                tp2 := Basic.New(Teleporter);
-                << tp2 = << tp1;
-                tp2.position.x = 15;
-                Basic.array_add(*context.game.entities, tp2);
+            create_teleporter(.{14, 8}, .{13, 12}, .{0, 0});
+            create_teleporter(.{15, 8}, .{13, 12}, .{0, 0});
         } else if map_pos == .{0, 0} {
-                tp := Basic.New(Teleporter);
-                tp.position = .{13, 13};
-                tp.world_pos = .{0, 0};
-                tp.new_pos = .{14.5, 9};
-                tp.new_world_pos = .{-1, 0};
-                Basic.array_add(*context.game.entities, tp);
+            create_teleporter(.{13, 13}, .{14.5, 9}, .{-1, 0});
+            create_enemy(.{10, 10});
         }
     }
 
@@ -244,57 +238,42 @@ Game :: struct {
         return p.x > a1.x && p.x < a2.y && p.y > a1.y && p.y < a2.y;
     }
 
-    /*
-    create_enemy :: () {
-        e := Entity.create();
-        sprite := Entity.add_component(e, Sprite);
-        sprite.sprite_sheet = global_game.red_samurai_texture;
-        sprite.flags |= .USE_DIRECTION_AS_X;
-        xform := Entity.add_component(e, Transform);
-        xform.pos.x = 10; // Random.random_get_within_range(0, MAP_WIDTH);
-        xform.pos.y = 10; // Random.random_get_within_range(0, MAP_HEIGHT);
-        xform.world_pos = .{0,0};
-        Entity.add_component(e, Enemy);
-        Entity.add_component(e, Velocity);
-        Entity.add_component(e, Animation);
-        Entity.add_component(e, Hitbox.{tag = .ENEMY});
-        Entity.add_component(e, Health);
-        Entity.add_component(e, Collision);
+    create_enemy :: (pos : Vector2) -> *Entity {
+        e := Basic.New(Enemy);
+        e.sprite_sheet = *context.game.red_samurai_texture;
+        e.position = pos;
+        e.world_pos = context.game.current_world_pos;
+        Basic.array_add(*context.game.entities, e);
+        return e;
     }
 
-    create_weapon :: (parent : *Entity, tag : Hitbox.Tag, time : float) -> *Entity {
-        weapon := Entity.create();
-        xform := Entity.get_component(parent, Transform);
-        w_xform := Entity.add_component(weapon, Transform);
-        Component.copy(xform, w_xform);
-        w_xform.pos += forward(w_xform.direction);
-
-        sprite := Entity.add_component(weapon, Sprite);
-        sprite.sprite_sheet = global_game.katana_texture;
-        sprite.flags |= .USE_DIRECTION_AS_X;
-
-        hitbox := Entity.add_component(weapon, Hitbox);
-        hitbox.look_for = tag;
-        hitbox.p0.x = -0.4;
-        hitbox.p1.x = 0;
-        autokill := Entity.add_component(weapon, AutoKill);
-        autokill.time = time;
+    create_weapon :: (parent : Entity, target: Entity.Tag, time : float) -> *Entity {
+        weapon := Basic.New(Weapon);
+        weapon.look_for = target;
+        weapon.position = parent.position;
+        weapon.position += forward(parent.direction);
+        weapon.direction = parent.direction;
+        weapon.world_pos = parent.world_pos;
+        weapon.p0.x = -0.4;
+        weapon.p1.x = 0;
+        weapon.time_left = time;
+        weapon.sprite_sheet = *context.game.katana_texture;
+        weapon.sprite.x = xx weapon.direction;
+        Basic.array_add(*context.game.entities, weapon);
         return weapon;
     }
 
-    create_teleporter :: (pos : Vector2i, new_pos : Vector2, new_world_pos : Vector2i) -> *Entity {
-        tp := Entity.create();
-        
-        xform := Entity.add_component(tp, Transform);
-        xform.pos.x = xx pos.x;
-        xform.pos.y = xx pos.y;
-        xform.world_pos = global_game.current_world_pos;
-        comp := Entity.add_component(tp, Teleporter);
-        comp.new_pos = new_pos;
-        comp.new_world_pos = new_world_pos;
+    create_teleporter :: (pos : Vector2, new_pos : Vector2, new_world_pos : Vector2i) -> *Teleporter {
+        tp := Basic.New(Teleporter);
+        tp.position = pos;
+        tp.world_pos = context.game.current_world_pos;
+        tp.new_pos = new_pos;
+        tp.new_world_pos = new_world_pos;
+        Basic.array_add(*context.game.entities, tp);
         return tp;
     }
 
+    /*
     create_interactor :: (parent : *Entity) {
         interactor := Entity.create();
         xform := Entity.get_component(parent, Transform);
@@ -340,7 +319,7 @@ Game :: struct {
     */
 
     /// Computes a new velocity that avoids map obstacles
-    move_and_slide :: (entity: *Entity, velocity : Vector2, map : Map) -> Vector2{
+    move_and_slide :: (entity: *Entity, velocity : Vector2, map : Map) -> Vector2 {
         result : Vector2;
         new_center_x := entity.position + xy(velocity.x, 0);
         new_center_y := entity.position + xy(0, velocity.y);

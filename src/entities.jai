@@ -6,6 +6,7 @@ Entity :: struct {
         PLAYER;
         ENEMY;
         TELEPORTER;
+        WEAPON;
     };
     tag : Tag;
 
@@ -17,6 +18,10 @@ Entity :: struct {
     position : Vector2;
     direction : Direction;
     world_pos : Vector2i;
+
+    // Hitbox
+    p0 := Vector2.{-0.5, -0.5}; // Relative to the current center in the transform, looking south
+    p1 := Vector2.{ 0.5,  0.5};
 
     // @Cleanup Not used by every entity
     sprite_sheet : *Simp.Texture = null;
@@ -36,6 +41,54 @@ Entity :: struct {
             uv0 = uv0, uv1 = make_vector2(uv1.x, uv0.y), uv2 = uv1, uv3 = make_vector2(uv0.x, uv1.y));
 
     }
+
+    orient_hitbox :: (using e: Entity) -> Vector2, Vector2{
+        o0: Vector2; // Hitbox in grid space relative to current center but oriented
+        o1: Vector2; 
+        if direction == {
+            case .SOUTH; o0 = p0; o1 = p1;
+            case .NORTH; {
+                o0.x = -p1.x;
+                o0.y = -p1.y;
+                o1.x = -p0.x;
+                o1.y = -p0.y;
+            }
+            case .WEST; {
+                o0.x = p0.y;
+                o0.y = p0.x;
+                o1.x = p1.y;
+                o1.y = p1.x;
+            }
+            case .EAST; {
+                o0.x = p0.y;
+                o0.y = p0.x;
+                o1.x = p1.y;
+                o1.y = p1.x;
+            }
+        }
+        return o0, o1;
+        
+    }
+
+    Anim_State :: enum {
+        IDLE;
+        WALKING;
+        WINDUP;
+        ATTACKING;
+    };
+
+    get_sprite :: (state : Anim_State, anim_time: float, direction : Direction) -> Vector2i {
+        result : Vector2i = ---;
+        result.x = xx direction;
+        if #complete state == {
+            case .IDLE;      result.y = 6;
+            case .WALKING;   result.y = 6 - cast(s32)(anim_time * 4);
+            case .ATTACKING; result.y = 2;
+            case .WINDUP;    result.y = xx ifx (direction == .SOUTH) then 5 else 3;
+
+        };
+        return result;
+    }
 }
 
 Player :: struct {
@@ -43,10 +96,7 @@ Player :: struct {
     SPEED :: 5.0;
     tag = .PLAYER;
 
-    state : enum {
-        IDLE;
-        ATTACKING;
-    }
+    state : Entity.Anim_State;
     attack_time : float;
     anim_time   : float;
 
@@ -59,31 +109,27 @@ Player :: struct {
             if Input.input_button_states[#char "W"] & .DOWN {
                 vel.y += 1;
                 direction = .NORTH;
-                sprite.x = xx direction;
             }
             if Input.input_button_states[#char "A"] & .DOWN {
                 vel.x -= 1;
                 direction = .WEST;
-                sprite.x = xx direction;
             }
             if Input.input_button_states[#char "S"] & .DOWN {
                 vel.y -= 1; 
                 direction = .SOUTH;
-                sprite.x = xx direction;
             }
             if Input.input_button_states[#char "D"] & .DOWN {
                 vel.x += 1; 
                 direction = .EAST;
-                sprite.x = xx direction;
             }
             norm_vel := Math.unit_vector(vel) * (delta_time * SPEED);
             if Math.length(norm_vel) > 0 { 
                 anim_time += delta_time;
                 if anim_time > 1.0 then anim_time = 0;
-                sprite.y = 6 - cast(s32)(anim_time * 4.0); 
+                state = .WALKING;
                 Game.move_and_slide(*e, norm_vel, context.game.current_map);
             } else {
-                sprite.y = 6;
+                state = .IDLE;
             }
 
             // Attack
@@ -91,8 +137,10 @@ Player :: struct {
                 state = .ATTACKING;
                 sprite.y = 2;
                 attack_time = 0.2;
-                // Game.create_weapon(entity, .ENEMY, attack_time);
+                Game.create_weapon(e, .ENEMY, attack_time);
             }
+
+            sprite = Entity.get_sprite(state, anim_time, direction);
 
             if Input.input_button_states[#char "E"] & .START {
                 // Game.create_interactor(entity);
@@ -115,7 +163,9 @@ Enemy :: struct {
         WINDUP;
         ATTACK;
     }
+    state : Anim_State;
     combat_timer : float;
+    anim_time : float;
 
     WINDUP_TIME :: 0.5;
     ATTACK_TIME :: 0.2;
@@ -142,19 +192,43 @@ Enemy :: struct {
             case .APPROACHING; {
                 if distance < 1 {
                     combat_phase = .WINDUP;
+                    state = .WINDUP;
                     combat_timer = WINDUP_TIME;
-                    return;
+                } else {
+                    dir := Math.unit_vector(player.position - position);
+                    vel := dir * delta_time * 3.0;
+                    final_vel := Game.move_and_slide(*e, vel, context.game.current_map);
+
+                    if abs(final_vel.x) > abs(final_vel.y) {
+                        if final_vel.x > 0 then {
+                            direction = Direction.EAST;
+                        } else {
+                            direction = Direction.WEST;
+                        }
+                    } else {
+                        if final_vel.y > 0 {
+                            direction = Direction.NORTH;
+                        } else {
+                            direction = Direction.SOUTH;
+                        }
+                    }
+
+                    if Math.length(final_vel) > 0 {
+                        anim_time += delta_time;
+                        if anim_time > 1.0 then anim_time = 0;
+                        state = .WALKING;
+                    } else {
+                        state = .IDLE;
+                    }
                 }
-                dir := Math.unit_vector(player.position - position);
-                vel := dir * delta_time * 3.0;
-                Game.move_and_slide(*e, vel, context.game.current_map);
             }
             case .WINDUP; {
                 combat_timer -= delta_time;
                 if combat_timer < 0 {
                     combat_phase = .ATTACK;
+                    state = .ATTACKING;
                     combat_timer = ATTACK_TIME;
-                    // Game.create_weapon(entity, .PLAYER, ATTACK_TIME);
+                    Game.create_weapon(e, .PLAYER, ATTACK_TIME);
                 }
             }
             case .ATTACK; {
@@ -162,6 +236,8 @@ Enemy :: struct {
                 if combat_timer <= 0 then combat_phase = .APPROACHING;
             }
         }
+
+        sprite = Entity.get_sprite(state, anim_time, direction);
     }
 }
 
@@ -189,6 +265,28 @@ Teleporter :: struct {
                 }
             } 
             player.position = new_pos;
+        }
+    }
+}
+
+Weapon :: struct {
+    using e: Entity;
+    tag = .WEAPON;
+
+    look_for: Entity.Tag = .NONE; // What kind of hitboxes to search. Used to give
+    time_left : float;
+
+    simulate :: (using weapon: *Weapon, delta_time: float) { 
+        time_left -= delta_time;
+        if time_left <= 0 then e.flags |= .SHOULD_DELETE;
+        o0, o1 := Entity.orient_hitbox(e);
+        for context.game.entities { 
+            if it.tag != look_for then continue;
+            it_o0, it_o1 := Entity.orient_hitbox(it);
+            collides := Game.rect_intersects(o0 + position, o1 + position, it_o0 + it.position, it_o1 + it.position);
+            if collides {
+                Basic.log("Collision!");
+            }
         }
     }
 }

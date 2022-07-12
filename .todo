@@ -3,6 +3,7 @@
 
 
 # Inbox 
+- [ ] Sword doesnt deal damage when we are very close to the bush
 - [ ] Sort entities in y
 - [ ] Il faut que le perso change de direction, MEME quand on est colles a un mur
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
@@ -22,7 +23,7 @@
     - [ ] Puzzles
 
 # To consider
-- [ ] (Collision) Allow definition of a custom collision box, for some tiles.
+- [ ] (Collision) Allow definition of a custom collision box, for some map tiles.
 - [ ] Pathfinding ?
 
 # Done

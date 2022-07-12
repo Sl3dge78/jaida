@@ -7,25 +7,36 @@ Entity :: struct {
         ENEMY;
         TELEPORTER;
         WEAPON;
+        INTERACTABLE;
+        PICKUP;
     };
     tag : Tag;
 
     Flag :: enum_flags {
         SHOULD_DELETE;
+        SOLID;
     };
     flags : Flag;
+
 
     position : Vector2;
     direction : Direction;
     world_pos : Vector2i;
 
     // Hitbox
-    p0 := Vector2.{-0.5, -0.5}; // Relative to the current center in the transform, looking south
-    p1 := Vector2.{ 0.5,  0.5};
+    p0 := Vector2.{-0.4, -0.5}; // Relative to the current center in the transform, looking south
+    p1 := Vector2.{ 0.4,  0.0};
 
-    // @Cleanup Not used by every entity
+    // @Cleanup From here on, these are not used by every entity
     sprite_sheet : *Simp.Texture = null;
     sprite : Vector2i;
+
+    // To deal damage
+    hit_tag : Tag;
+    health: int = 4;
+    immunity: float;
+
+    IMMUNITY_TIME :: 1;
 
     draw :: (using e: *Entity) {
         if !sprite_sheet then return;
@@ -39,7 +50,6 @@ Entity :: struct {
             p2 = make_vector2(xx x1, xx y1),
             p3 = make_vector2(xx x0, xx y1),
             uv0 = uv0, uv1 = make_vector2(uv1.x, uv0.y), uv2 = uv1, uv3 = make_vector2(uv0.x, uv1.y));
-
     }
 
     orient_hitbox :: (using e: Entity) -> Vector2, Vector2{
@@ -89,20 +99,43 @@ Entity :: struct {
         };
         return result;
     }
+
+    deal_damage :: (ett: *Entity, amount : int) {
+        if ett.immunity <= 0 {
+            ett.health -= amount;
+            ett.immunity = IMMUNITY_TIME;
+        }
+        if ett.health <= 0 then ett.flags |= .SHOULD_DELETE;
+    }
+
+    interact :: (ett: *Entity) {
+        if ett.tag == .INTERACTABLE { 
+            Dialog.open(tree);
+        }
+    }
 }
+
+tree := Dialog.Node.[
+    Dialog.Node.{lines = .["Hello, I'm a chest!","And this is a second line!", "How many lines can you fit here?"], jumps = .[1]},
+    Dialog.Node.{has_title = true, lines = .["Chest", "Hey I have a title now!"], jumps = .[2] },
+    Dialog.Node.{has_title = true, lines = .["Chest", "Go back to the start?", "Yes", "No"], jumps = .[0, -1]},
+];
 
 Player :: struct {
     using e: Entity;
     SPEED :: 5.0;
     tag = .PLAYER;
+    hit_tag = .PLAYER;
 
     state : Entity.Anim_State;
     attack_time : float;
     anim_time   : float;
 
-    health : int;
+    keys : int;
 
     simulate :: (using player : *Player, delta_time : float) { 
+        if immunity > 0 then immunity -= delta_time;
+
         if state != .ATTACKING {
             // Movement
             vel : Vector2;
@@ -143,7 +176,13 @@ Player :: struct {
             sprite = Entity.get_sprite(state, anim_time, direction);
 
             if Input.input_button_states[#char "E"] & .START {
-                // Game.create_interactor(entity);
+                interacted_tile : Vector2i = Vector2i.from(position + forward(direction));
+                Basic.log("%", interacted_tile);
+                for context.game.entities {
+                    if Vector2i.from(it.position) == interacted_tile {
+                        Entity.interact(it);
+                    }
+                }
             }
         } else {
             attack_time -= delta_time;
@@ -155,6 +194,7 @@ Player :: struct {
 Enemy :: struct { 
     using e : Entity;
     tag = .ENEMY;
+    hit_tag = .ENEMY;
 
     is_aggroed : bool;
     combat_phase : enum {
@@ -174,7 +214,9 @@ Enemy :: struct {
     DEAGGRO_DIST :: 10;
 
     simulate :: (using enemy: *Enemy, delta_time: float) {
-        player := context.game.player;
+        if immunity > 0 then immunity -= delta_time;
+
+        player := Game.get_player();
         distance := Math.distance(player.position, position);
 
         if distance > DEAGGRO_DIST || player.world_pos != world_pos {
@@ -239,6 +281,7 @@ Enemy :: struct {
 
         sprite = Entity.get_sprite(state, anim_time, direction);
     }
+
 }
 
 Teleporter :: struct {
@@ -249,19 +292,17 @@ Teleporter :: struct {
     new_pos : Vector2;
 
     simulate :: (using teleporter: *Teleporter, delta_time: float) {
-        player := *context.game.player;
-        if Vector2i.from_vector2(player.position) == Vector2i.from_vector2(position) {
-            Basic.log("Before: Player: %, New: %", player.world_pos, new_world_pos);
+        player := Game.get_player();
+        if Vector2i.from(player.position) == Vector2i.from(position) {
             if player.world_pos != new_world_pos {
-                Basic.log("Before: Player: %, New: %", player.world_pos, new_world_pos);
+                old_world_pos := player.world_pos;
+                player.world_pos = new_world_pos; // @Cleanup : we need to do this or the player gets deleted
                 if Game.request_map_change(context.game.current_map, new_world_pos) {
-                    player.world_pos = new_world_pos;
-                    Basic.log("After: Player: %, New: %", player.world_pos, new_world_pos);
                 } else {
                     // The map doesn't exist, to prevent checking every frame, delete ourselves.
+                    player.world_pos = old_world_pos; 
                     Basic.log_error("Map % doesn't exist!", new_world_pos);
-                    // @Todo
-                    // entity.flags |= .SHOULD_DELETE;
+                    flags |= .SHOULD_DELETE;
                 }
             } 
             player.position = new_pos;
@@ -274,19 +315,41 @@ Weapon :: struct {
     tag = .WEAPON;
 
     look_for: Entity.Tag = .NONE; // What kind of hitboxes to search. Used to give
-    time_left : float;
+    time_left: float;
 
     simulate :: (using weapon: *Weapon, delta_time: float) { 
         time_left -= delta_time;
         if time_left <= 0 then e.flags |= .SHOULD_DELETE;
         o0, o1 := Entity.orient_hitbox(e);
+    
         for context.game.entities { 
-            if it.tag != look_for then continue;
+            if it.hit_tag == .NONE then continue;
+            if it.hit_tag != look_for then continue;
             it_o0, it_o1 := Entity.orient_hitbox(it);
             collides := Game.rect_intersects(o0 + position, o1 + position, it_o0 + it.position, it_o1 + it.position);
             if collides {
-                Basic.log("Collision!");
+                Entity.deal_damage(it, 1);
             }
+        }
+    }
+}
+
+Pickup :: struct {
+    using e: Entity;
+    tag = .PICKUP;
+
+    Pickup_Type :: enum {
+        KEY;
+    };
+
+    pickup_type : Pickup_Type;
+
+    simulate :: (using pickup: *Pickup, delta_time: float) {
+        player := Game.get_player();
+        collides := Game.rect_intersects(p0 + position, p1 + position, player.p0 + player.position, player.p1 + player.position);
+        if collides {
+            flags |= .SHOULD_DELETE;
+            player.keys += 1;
         }
     }
 }

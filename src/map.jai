@@ -59,7 +59,7 @@ Map :: struct {
         return true;
     }
 
-    // @Speed : This is kind of dumb
+    // @Speed : This is dumb
     exists :: (world_pos : Vector2i) -> bool {
         map_file, success := File.file_open(get_map_file_name(world_pos));
         if success then File.file_close(*map_file);
@@ -67,13 +67,11 @@ Map :: struct {
     }
 
     // @Debug : Bounds check?
-    get_collision_at :: (using map : Map, pos : Vector2, entity : *Entity = null) -> u32 {
+    get_collision_at :: (using map : Map, pos : Vector2) -> u32 {
         x : int = xx round(pos.x);
         if x < 0 || x >= MAP_WIDTH  then return 1;
         y : int = xx round(pos.y);
         if y < 0 || y >= MAP_HEIGHT then return 1;
-
-       
 
         return map.tiles[COLLISION_LAYER][x + y * MAP_WIDTH];
     }

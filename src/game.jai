@@ -6,7 +6,7 @@ Vector2i :: struct {
         return sqrt(cast(float)(v.x * v.x + v.y * v.y));
     }
 
-    from_vector2 :: (v : Vector2) -> Vector2i {
+    from :: (v : Vector2) -> Vector2i {
         result : Vector2i = ---;
         result.x = xx round(v.x);
         result.y = xx round(v.y);
@@ -79,7 +79,6 @@ Game :: struct {
     katana_texture       : Simp.Texture;
     key_texture          : Simp.Texture;
 
-    player : Player;
     entities : [..]* Entity;
 
     // Dialog
@@ -115,13 +114,8 @@ Game :: struct {
         load_texture_no_filter(*key_texture, "res/key.png");
 
         dialog_blip = Audio_Stream.load("res/audio/blip.wav");
-        
         starting_world_pos :: Vector2i.{-1, 0};
-        player.sprite_sheet = *blue_samurai_texture;
-        player.position = .{14, 11};
-        player.world_pos = starting_world_pos;
-
-
+        create_player(.{14, 12}, starting_world_pos);
         request_map_change(current_map, starting_world_pos);
     }
 
@@ -133,15 +127,18 @@ Game :: struct {
 
         if game.state == { 
             case .GAME;
-                Player.simulate(*context.game.player, delta_time);
                 for game.entities {
                     if it.tag == {
+                        case .PLAYER;
+                            Player.simulate(xx it, delta_time);
                         case .ENEMY; 
                             Enemy.simulate(xx it, delta_time);
                         case .TELEPORTER;
                             Teleporter.simulate(xx it, delta_time);
                         case .WEAPON;
                             Weapon.simulate(xx it, delta_time);
+                        case .PICKUP;
+                            Pickup.simulate(xx it, delta_time);
                     }
                 }
             case .EDITOR; {
@@ -185,7 +182,6 @@ Game :: struct {
         Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(1);
 
-        Entity.draw(*context.game.player.e);
         for game.entities {
             Entity.draw(it);
         }
@@ -224,9 +220,12 @@ Game :: struct {
         if map_pos == .{-1, 0} { // Interior
             create_teleporter(.{14, 8}, .{13, 12}, .{0, 0});
             create_teleporter(.{15, 8}, .{13, 12}, .{0, 0});
-        } else if map_pos == .{0, 0} {
+        } else if map_pos == .{0, 0} { // Town South
             create_teleporter(.{13, 13}, .{14.5, 9}, .{-1, 0});
             create_enemy(.{10, 10});
+            create_key(.{20, 10});
+        } else if map_pos == .{0, 1} { // Town North
+            create_bush(.{18, 14});
         }
     }
 
@@ -238,17 +237,31 @@ Game :: struct {
         return p.x > a1.x && p.x < a2.y && p.y > a1.y && p.y < a2.y;
     }
 
-    create_enemy :: (pos : Vector2) -> *Entity {
-        e := Basic.New(Enemy);
-        e.sprite_sheet = *context.game.red_samurai_texture;
-        e.position = pos;
-        e.world_pos = context.game.current_world_pos;
+    new_entity :: ($type : Type) -> *type {
+        e := Basic.New(type);
         Basic.array_add(*context.game.entities, e);
         return e;
     }
 
+    create_player :: (pos : Vector2, world_pos : Vector2i) {
+        player := new_entity(Player);
+        player.sprite_sheet = *context.game.blue_samurai_texture;
+        player.position = pos;
+        player.world_pos = world_pos;
+        player.flags |= .SOLID;
+    }
+
+    create_enemy :: (pos : Vector2) -> *Entity {
+        e := new_entity(Enemy);
+        e.sprite_sheet = *context.game.red_samurai_texture;
+        e.position = pos;
+        e.world_pos = context.game.current_world_pos;
+        e.flags |= .SOLID;
+        return e;
+    }
+
     create_weapon :: (parent : Entity, target: Entity.Tag, time : float) -> *Entity {
-        weapon := Basic.New(Weapon);
+        weapon := new_entity(Weapon);
         weapon.look_for = target;
         weapon.position = parent.position;
         weapon.position += forward(parent.direction);
@@ -259,117 +272,87 @@ Game :: struct {
         weapon.time_left = time;
         weapon.sprite_sheet = *context.game.katana_texture;
         weapon.sprite.x = xx weapon.direction;
-        Basic.array_add(*context.game.entities, weapon);
         return weapon;
     }
 
     create_teleporter :: (pos : Vector2, new_pos : Vector2, new_world_pos : Vector2i) -> *Teleporter {
-        tp := Basic.New(Teleporter);
+        tp := new_entity(Teleporter);
         tp.position = pos;
         tp.world_pos = context.game.current_world_pos;
         tp.new_pos = new_pos;
         tp.new_world_pos = new_world_pos;
-        Basic.array_add(*context.game.entities, tp);
         return tp;
     }
 
-    /*
-    create_interactor :: (parent : *Entity) {
-        interactor := Entity.create();
-        xform := Entity.get_component(parent, Transform);
-        w_xform := Entity.add_component(interactor, Transform);
-        Component.copy(xform, w_xform);
-        w_xform.pos += forward(w_xform.direction);
+    create_bush :: (pos : Vector2) {
+        e := new_entity(Entity);
+        e.position = pos;
+        e.flags |= .SOLID;
+        e.world_pos = context.game.current_world_pos;
+        e.sprite_sheet = *context.game.map_texture;
+        x, y := tile_id_to_xy(*context.game.map_texture, 1895);
+        e.sprite.x = xx x;
+        e.sprite.y = xx y;
 
-        hitbox := Entity.add_component(interactor, Hitbox);
-        hitbox.look_for = .INTERACT;
-        hitbox.p0.x = -0.2;
-        hitbox.p1.x = 0.2;
-        hitbox.p0.y = -0.2;
-        hitbox.p1.y = 0.2;
-        interactor.flags |= .SHOULD_DELETE; // @Hack: is it even a hack??
+        e.hit_tag = .ENEMY;
+        e.health = 1;
     }
 
-    create_bush :: (pos : Vector2, world_pos : Vector2i) {
-        ett := Entity.create();
-        xform := Entity.add_component(ett, Transform);
-        xform.pos = pos;
-        xform.world_pos = world_pos;
-        Entity.add_component(ett, Collision.{p0 = .{-0.5, -0.5}, p1 = .{0.5, 0.5}});
-        Entity.add_component(ett, Health.{hp = 1});
-        Entity.add_component(ett, Hitbox.{tag = .ENEMY});
-        sprite := Entity.add_component(ett, Sprite);
-        sprite.sprite_sheet = *global_game.map_texture;
-        x, y := tile_id_to_xy(*global_game.map_texture, 1895);
-        sprite.sprite_x = x;
-        sprite.sprite_y = y;
-        
+    create_key :: (pos : Vector2) {
+        e := new_entity(Pickup);
+        e.position = pos;
+        e.world_pos = context.game.current_world_pos;
+        e.sprite_sheet = *context.game.key_texture;
+        e.pickup_type = .KEY;
     }
-
-    create_key :: (pos : Vector2, world_pos : Vector2i) {
-        ett := Entity.create();
-        xform := Entity.add_component(ett, Transform);
-        xform.pos = pos;
-        xform.world_pos = world_pos;
-        Entity.add_component(ett, Key);
-        Entity.add_component(ett, Hitbox.{look_for = .PLAYER});
-        sprite := Entity.add_component(ett, Sprite);
-        sprite.sprite_sheet = *global_game.key_texture;
-    }
-    */
 
     /// Computes a new velocity that avoids map obstacles
     move_and_slide :: (entity: *Entity, velocity : Vector2, map : Map) -> Vector2 {
+        // @Speed : Get the sign of the velocity? to check only 1 side
+        is_move_possible :: (entity: *Entity, new_center : Vector2, map : Map) -> bool {
+            if Map.get_collision_at(map, new_center + entity.p1) == 0 &&
+            Map.get_collision_at(map, new_center + entity.p0) == 0 &&
+            Map.get_collision_at(map, new_center + xy(entity.p0.x, entity.p1.y)) == 0 &&
+            Map.get_collision_at(map, new_center + xy(entity.p1.x, entity.p0.y)) == 0 {
+                // Check entities
+                p0 := new_center + entity.p0;
+                p1 := new_center + entity.p1;
+                for context.game.entities {
+                    if it == entity then continue;
+                    if it.flags & .SOLID {
+                        is_in_rect := Game.rect_intersects(p0, p1, it.position + it.p0, it.position + it.p1);
+                        if is_in_rect {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
         result : Vector2;
         new_center_x := entity.position + xy(velocity.x, 0);
         new_center_y := entity.position + xy(0, velocity.y);
 
-        // @Speed : Get the sign of the velocity? to check only 1 side
-        // @Hardcoded : Specify the size of the sprite?
-        xp1 := new_center_x + Vector2.{ 0.4,  0.0};
-        xp0 := new_center_x + Vector2.{-0.4, -0.5};
-        if Map.get_collision_at(map, new_center_x + Vector2.{ 0.4,  0.0}, entity) == 0 &&
-           Map.get_collision_at(map, new_center_x + Vector2.{ 0.4, -0.5}, entity) == 0 &&
-           Map.get_collision_at(map, new_center_x + Vector2.{-0.4,  0.0}, entity) == 0 &&
-           Map.get_collision_at(map, new_center_x + Vector2.{-0.4, -0.5}, entity) == 0 {
-            do_move := true;
-            /* @Todo
-            for Component_Manager.get_component_storage(Collision, false) {
-                if it.entity == xform.entity continue;
-                it_xform := Entity.get_component(it.entity, Transform);
-                is_in_rect := Game.rect_intersects(xp0, xp1, it_xform.pos + it.p0, it_xform.pos + it.p1);
-                if is_in_rect {
-                    do_move = false;
-                    break;
-                }
-            }
-            */
-            if do_move then result.x += velocity.x;
+        if is_move_possible(entity, new_center_x, map) {
+            result.x += velocity.x;
         }
 
-        yp1 := new_center_y + Vector2.{ 0.4,  0.0};
-        yp0 := new_center_y + Vector2.{-0.4, -0.5};
-        if Map.get_collision_at(map, new_center_y + Vector2.{ 0.4,  0.0}, entity) == 0 &&
-           Map.get_collision_at(map, new_center_y + Vector2.{-0.4,  0.0}, entity) == 0 &&
-           Map.get_collision_at(map, new_center_y + Vector2.{ 0.4, -0.5}, entity) == 0 &&
-           Map.get_collision_at(map, new_center_y + Vector2.{-0.4, -0.5}, entity) == 0 {
-            do_move := true;
-            /* @Todo
-            for Component_Manager.get_component_storage(Collision, false) {
-                if it.entity == xform.entity continue;
-                it_xform := Entity.get_component(it.entity, Transform);
-                is_in_rect := Game.rect_intersects(yp0, yp1, it_xform.pos + it.p0, it_xform.pos + it.p1);
-                if is_in_rect {
-                    do_move = false;
-                    break;
-                }
-            }
-            */
-            if do_move then result.y += velocity.y;
-        }   
+        if is_move_possible(entity, new_center_y, map) {
+            result.y += velocity.y;
+        }
 
         entity.position += result;
         return result;
+    }
+
+    get_player :: () -> *Player {
+        for context.game.entities {
+            if it.tag == .PLAYER then return xx it;
+        }
+        Basic.assert(false, "Couldn't find the player entity");
+        return null;
     }
 }
 

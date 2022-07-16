@@ -7,7 +7,6 @@ Entity :: struct {
         ENEMY;
         TELEPORTER;
         WEAPON;
-        INTERACTABLE;
         PICKUP;
     };
     tag : Tag;
@@ -15,13 +14,16 @@ Entity :: struct {
     Flag :: enum_flags {
         SHOULD_DELETE;
         SOLID;
+        INTERACTABLE;
+        ORIENT_HITBOX;
     };
     flags : Flag;
-
 
     position : Vector2;
     direction : Direction;
     world_pos : Vector2i;
+
+    color : Vector4 = .{1, 1, 1, 1};
 
     // Hitbox
     p0 := Vector2.{-0.4, -0.5}; // Relative to the current center in the transform, looking south
@@ -36,6 +38,8 @@ Entity :: struct {
     health: int = 4;
     immunity: float;
 
+    on_interact : (*Entity) = null;
+
     IMMUNITY_TIME :: 1;
 
     draw :: (using e: *Entity) {
@@ -48,11 +52,29 @@ Entity :: struct {
             p0 = make_vector2(xx x0, xx y0),
             p1 = make_vector2(xx x1, xx y0),
             p2 = make_vector2(xx x1, xx y1),
-            p3 = make_vector2(xx x0, xx y1),
+            p3 = make_vector2(xx x0, xx y1), color = color, 
             uv0 = uv0, uv1 = make_vector2(uv1.x, uv0.y), uv2 = uv1, uv3 = make_vector2(uv0.x, uv1.y));
-    }
+
+            #if DEVELOPER {
+                if e.tag == .WEAPON || e.tag == .ENEMY {
+                    o0, o1 := Entity.orient_hitbox(e);
+                    x0, y0 := Map.map_to_screen(context.game.camera_position, position + o0);
+                    x1, y1 := Map.map_to_screen(context.game.camera_position, position + o1);
+                    Simp.set_shader_for_color(true);
+                    Simp.immediate_quad(
+                        p0 = make_vector2(xx x0, xx y0),
+                        p1 = make_vector2(xx x1, xx y0),
+                        p2 = make_vector2(xx x1, xx y1),
+                        p3 = make_vector2(xx x0, xx y1), color = .{1, .5, .5, .5});
+                }
+            }
+        }
 
     orient_hitbox :: (using e: Entity) -> Vector2, Vector2{
+        if e.flags & .ORIENT_HITBOX == 0 {
+            return e.p0, e.p1;
+        }
+
         o0: Vector2; // Hitbox in grid space relative to current center but oriented
         o1: Vector2; 
         if direction == {
@@ -70,9 +92,9 @@ Entity :: struct {
                 o1.y = p1.x;
             }
             case .EAST; {
-                o0.x = p0.y;
+                o0.x = -p0.y;
                 o0.y = p0.x;
-                o1.x = p1.y;
+                o1.x = -p1.y;
                 o1.y = p1.x;
             }
         }
@@ -109,9 +131,23 @@ Entity :: struct {
     }
 
     interact :: (ett: *Entity) {
-        if ett.tag == .INTERACTABLE { 
-            Dialog.open(tree);
+        if ett.flags & .INTERACTABLE { 
+            if ett.on_interact {
+                ett.on_interact(ett);
+            }         
         }
+    }
+
+    update_immunity :: (using ett: *Entity, delta_time: float) {
+        if immunity > 0 {
+            immunity -= delta_time;
+            if cast(s32)(immunity * 16.0) % 2 == 0 {
+                color = .{1, 1, 1, 1};
+            } else {
+                color = .{10, 10, 10, 1};
+            }
+        }
+
     }
 }
 
@@ -134,7 +170,7 @@ Player :: struct {
     keys : int;
 
     simulate :: (using player : *Player, delta_time : float) { 
-        if immunity > 0 then immunity -= delta_time;
+        update_immunity(xx player, delta_time);
 
         if state != .ATTACKING {
             // Movement
@@ -214,7 +250,7 @@ Enemy :: struct {
     DEAGGRO_DIST :: 10;
 
     simulate :: (using enemy: *Enemy, delta_time: float) {
-        if immunity > 0 then immunity -= delta_time;
+        update_immunity(xx enemy, delta_time);
 
         player := Game.get_player();
         distance := Math.distance(player.position, position);
@@ -313,6 +349,7 @@ Teleporter :: struct {
 Weapon :: struct {
     using e: Entity;
     tag = .WEAPON;
+    flags = .ORIENT_HITBOX;
 
     look_for: Entity.Tag = .NONE; // What kind of hitboxes to search. Used to give
     time_left: float;
@@ -326,7 +363,7 @@ Weapon :: struct {
             if it.hit_tag == .NONE then continue;
             if it.hit_tag != look_for then continue;
             it_o0, it_o1 := Entity.orient_hitbox(it);
-            collides := Game.rect_intersects(o0 + position, o1 + position, it_o0 + it.position, it_o1 + it.position);
+            collides := Game.rect_intersects(o0 + position, o1 + position, it.p0 + it.position, it.p1 + it.position);
             if collides {
                 Entity.deal_damage(it, 1);
             }
@@ -353,3 +390,23 @@ Pickup :: struct {
         }
     }
 }
+
+Door :: struct {
+    using e: Entity;
+    on_interact = try_open;
+    e.flags = Entity.Flag.SOLID | .INTERACTABLE;
+
+    try_open :: (e: *Entity) {
+        player := Game.get_player();
+        if player.keys > 0 {
+            e.flags |= .SHOULD_DELETE;
+            player.keys -= 1;
+        } else {
+            Dialog.open(no_key_dialog);
+        }
+    }
+}
+
+no_key_dialog := Dialog.Node.[
+    Dialog.Node.{lines = .["You need a key to open this door"], jumps = .[-1]}
+    ];

@@ -114,8 +114,8 @@ Game :: struct {
         load_texture_no_filter(*key_texture, "res/key.png");
 
         dialog_blip = Audio_Stream.load("res/audio/blip.wav");
-        starting_world_pos :: Vector2i.{-1, 0};
-        create_player(.{14, 12}, starting_world_pos);
+        starting_world_pos :: Vector2i.{0, 1};
+        create_player(.{18, 7}, starting_world_pos);
         request_map_change(current_map, starting_world_pos);
     }
 
@@ -182,6 +182,9 @@ Game :: struct {
         Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(1);
 
+        // Sort entities in y
+        sort_entities(game.entities);
+
         for game.entities {
             Entity.draw(it);
         }
@@ -214,6 +217,19 @@ Game :: struct {
         return true;
     }
 
+    sort_entities :: (arr : [..]* Entity) {
+        for i: 1..arr.count - 1 {
+            entity := arr[i];
+            y := arr[i].position.y;
+            j := i - 1;
+            while (j >= 0 && arr[j].position.y < y) {
+                arr[j + 1] = arr[j];
+                j -= 1;
+            }
+            arr[j + 1] = entity;
+        }
+    }
+
     // @Temporary : Until we have entity loading.
     load_entities :: (map_pos : Vector2i) {
 
@@ -224,8 +240,14 @@ Game :: struct {
             create_teleporter(.{13, 13}, .{14.5, 9}, .{-1, 0});
             create_enemy(.{10, 10});
             create_key(.{20, 10});
+            create_door(.{20, 20});
         } else if map_pos == .{0, 1} { // Town North
             create_bush(.{18, 14});
+            create_bush(.{18, 8});
+            create_bush(.{16, 8});
+            create_bush(.{14, 8});
+        } else if map_pos == .{1, 1} {
+            create_bush(.{5, 11});
         }
     }
 
@@ -268,10 +290,13 @@ Game :: struct {
         weapon.direction = parent.direction;
         weapon.world_pos = parent.world_pos;
         weapon.p0.x = -0.4;
+        weapon.p0.y = -0.2;
         weapon.p1.x = 0;
+        weapon.p1.y = 0.5;
         weapon.time_left = time;
         weapon.sprite_sheet = *context.game.katana_texture;
         weapon.sprite.x = xx weapon.direction;
+        Basic.log("pos: %", weapon.position);
         return weapon;
     }
 
@@ -304,6 +329,16 @@ Game :: struct {
         e.world_pos = context.game.current_world_pos;
         e.sprite_sheet = *context.game.key_texture;
         e.pickup_type = .KEY;
+    }
+
+    create_door :: (pos: Vector2){
+        e := new_entity(Door);
+        e.position = pos;
+        e.world_pos = context.game.current_world_pos;
+        e.sprite_sheet = *context.game.map_texture;
+        x, y := tile_id_to_xy(*context.game.map_texture, 3414);
+        e.sprite.x = xx x;
+        e.sprite.y = xx y;
     }
 
     /// Computes a new velocity that avoids map obstacles
@@ -344,6 +379,35 @@ Game :: struct {
         }
 
         entity.position += result;
+        if entity.position.y >= MAP_HEIGHT - 1 {
+            entity.world_pos.y += 1;
+            entity.position.y = 0;
+            if entity.tag == .PLAYER {
+                Game.request_map_change(context.game.current_map, entity.world_pos);
+            }
+        }
+        if entity.position.y < 0 {
+            entity.world_pos.y -= 1;
+            entity.position.y = MAP_HEIGHT - 1;
+            if entity.tag == .PLAYER {
+                Game.request_map_change(context.game.current_map, entity.world_pos);
+            }
+        }
+
+        if entity.position.x >= MAP_WIDTH - 1 {
+            entity.world_pos.x += 1;
+            entity.position.x = 0;
+            if entity.tag == .PLAYER {
+                Game.request_map_change(context.game.current_map, entity.world_pos);
+            }
+        }
+        if entity.position.x < 0 {
+            entity.world_pos.x -= 1;
+            entity.position.x = MAP_WIDTH - 1;
+            if entity.tag == .PLAYER {
+                Game.request_map_change(context.game.current_map, entity.world_pos);
+            }
+        }
         return result;
     }
 

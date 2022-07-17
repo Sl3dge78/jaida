@@ -1,9 +1,12 @@
 
 # In-Progress 
 
-
 # Inbox 
+- [ ] Save state: When we destroy the bushes, they come back
+- [ ] Quest tracker of sorts (not necessarily UI)
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
+- [ ] Make the key bob up & down
+- [ ] Make the characters bob up & down?
 
 ## System
 - [ ] Puzzles (push blocks?)
@@ -13,6 +16,12 @@
 ## Content
 - [ ] Dungeon 
     - [ ] Puzzles
+- [ ] Main Quest
+    - [ ] Get your sword
+    - [ ] Training in the village?
+    - [ ] Go to the castle
+    - [ ] Find castle key
+    - [ ] Kill boss in castle
 
 # To consider
 - [ ] Better audio system, using the callback. 

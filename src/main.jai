@@ -31,6 +31,7 @@ round :: (x : float32) -> float32 {
 #load "sprite.jai";
 #load "map.jai";
 #load "dialog.jai";
+#load "dialogs.jai";
 #load "audio.jai";
 #if DEVELOPER {
     #load "editor.jai";

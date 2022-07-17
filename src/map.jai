@@ -41,6 +41,7 @@ Map :: struct {
     }
 
     save :: (using map : Map, world_pos : Vector2i) {
+        Basic.log("world_pos: % %", world_pos, get_map_file_name(world_pos));
         if !File.write_entire_file(get_map_file_name(world_pos), tiles.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(tiles[0][0]))){
             Basic.log_error("Unable to save map!");
         }

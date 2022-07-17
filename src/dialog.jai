@@ -179,8 +179,11 @@ Dialog :: struct {
     }
 
     open :: (tree : []Node, first : u8 = 0) {
+        context.game.current_dialog_node = 0;
         context.game.state = .DIALOG;
         context.game.current_dialog_tree = tree;
         context.game.current_dialog_node = first;
+        context.game.dialog_nb_chars = 0;
+        context.game.char_timer = 0;
     }
 }

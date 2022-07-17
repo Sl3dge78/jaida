@@ -41,6 +41,16 @@ Editor :: struct {
             }
         }
 
+        if Input.input_button_states[Input.Key_Code.MOUSE_BUTTON_MIDDLE] & .START {
+            if !editor.show_map || game.mouse_x > game.screen_width / 2 {
+                pos := Map.screen_to_map(game.camera_position, game.mouse_x, game.mouse_y);
+                if pos.x >= 0 && pos.x < MAP_WIDTH && pos.y >= 0 && pos.y < MAP_HEIGHT {
+                    editor.selected_tile = game.current_map.tiles[cast(u32)editor.current_layer][cast(u32)pos.y * MAP_WIDTH + cast(u32)pos.x];
+                    Basic.log("%", editor.selected_tile);
+                }
+            }
+        }
+
         if Input.input_button_states[#char "W"] {
             editor.offset_y += 1;
             if (editor.offset_y > 0) editor.offset_y = 0; 
@@ -119,6 +129,7 @@ Editor :: struct {
         } else {
             Basic.Initialize(*map.tiles, Map_Type);
             Basic.log("Created new blank map at %.", pos);
+            context.game.current_world_pos = pos;
         }
     }
 

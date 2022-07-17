@@ -34,6 +34,10 @@ operator - :: (a: Vector2i, b: Vector2i) -> Vector2i {
 
 load_texture_no_filter :: (tex : *Simp.Texture, path : string) -> bool {
     result := Simp.texture_load_from_file(tex, path);
+    if !result {
+        Basic.log_error("Unable to load texture %", path);
+        Basic.exit(0);
+    }
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     return result;
@@ -103,6 +107,9 @@ Game :: struct {
 
         font = Simp.get_font_at_size("res", "monospace.ttf", 8 * ZOOM);
         small_font = Simp.get_font_at_size("res", "monospace.ttf", 4 * ZOOM);
+
+        load_texture_no_filter(*map_texture, "res/world.png");
+
         load_texture_no_filter(*dialogbox_texture, "res/ui/dialogbox.png");
         load_texture_no_filter(*dialogbox_notitle_texture, "res/ui/dialogbox_notitle.png");
         load_texture_no_filter(*dialogbox_choice_texture, "res/ui/dialogbox_choice.png");
@@ -110,12 +117,12 @@ Game :: struct {
         load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
         load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
         load_texture_no_filter(*katana_texture, "res/katana.png");
-        load_texture_no_filter(*map_texture, "res/world.png");
         load_texture_no_filter(*key_texture, "res/key.png");
 
         dialog_blip = Audio_Stream.load("res/audio/blip.wav");
-        starting_world_pos :: Vector2i.{0, 1};
-        create_player(.{18, 7}, starting_world_pos);
+        starting_world_pos :: Vector2i.{-1, 0};
+        player := create_player(.{15, 10}, starting_world_pos);
+        player.can_attack = false;
         request_map_change(current_map, starting_world_pos);
     }
 
@@ -136,7 +143,7 @@ Game :: struct {
                         case .TELEPORTER;
                             Teleporter.simulate(xx it, delta_time);
                         case .WEAPON;
-                            Weapon.simulate(xx it, delta_time);
+                            Damage_Area.simulate(xx it, delta_time);
                         case .PICKUP;
                             Pickup.simulate(xx it, delta_time);
                     }
@@ -232,15 +239,16 @@ Game :: struct {
 
     // @Temporary : Until we have entity loading.
     load_entities :: (map_pos : Vector2i) {
-
         if map_pos == .{-1, 0} { // Interior
-            create_teleporter(.{14, 8}, .{13, 12}, .{0, 0});
-            create_teleporter(.{15, 8}, .{13, 12}, .{0, 0});
+            create_teleporter(.{14, 8}, .{12, 15}, .{0, 0});
+            create_teleporter(.{15, 8}, .{12, 15}, .{0, 0});
         } else if map_pos == .{0, 0} { // Town South
-            create_teleporter(.{13, 13}, .{14.5, 9}, .{-1, 0});
-            create_enemy(.{10, 10});
-            create_key(.{20, 10});
-            create_door(.{20, 20});
+            create_teleporter(.{12, 16}, .{14.5, 9}, .{-1, 0}); // To home
+            create_teleporter(.{3, 13}, .{14.5, 9}, .{-2, 0}); // To chiefs house
+            create_teleporter(.{11, 6}, .{14, 9}, .{-3, 0}); // To dojo
+            create_teleporter(.{12, 6}, .{15, 9}, .{-3, 0}); // To dojo
+            create_teleporter(.{22, 18}, .{14.5, 9}, .{-4, 0}); // Other home
+            create_teleporter(.{28, 16}, .{14.5, 9}, .{-5, 0}); // Restaurant
         } else if map_pos == .{0, 1} { // Town North
             create_bush(.{18, 14});
             create_bush(.{18, 8});
@@ -248,6 +256,14 @@ Game :: struct {
             create_bush(.{14, 8});
         } else if map_pos == .{1, 1} {
             create_bush(.{5, 11});
+            chest := new_entity(Entity);
+            chest.flags |= Entity.Flag.INTERACTABLE | .SOLID;
+            chest.on_interact = player_get_weapon;
+            chest.position = .{21, 11};
+            chest.sprite_sheet = *context.game.map_texture;
+            x, y := tile_id_to_xy(*context.game.map_texture, 2611);
+            chest.sprite.x = xx x;
+            chest.sprite.y = xx y;
         }
     }
 
@@ -262,15 +278,17 @@ Game :: struct {
     new_entity :: ($type : Type) -> *type {
         e := Basic.New(type);
         Basic.array_add(*context.game.entities, e);
+        e.world_pos = context.game.current_world_pos;
         return e;
     }
 
-    create_player :: (pos : Vector2, world_pos : Vector2i) {
+    create_player :: (pos : Vector2, world_pos : Vector2i) -> *Player {
         player := new_entity(Player);
         player.sprite_sheet = *context.game.blue_samurai_texture;
         player.position = pos;
         player.world_pos = world_pos;
         player.flags |= .SOLID;
+        return player;
     }
 
     create_enemy :: (pos : Vector2) -> *Entity {
@@ -283,7 +301,7 @@ Game :: struct {
     }
 
     create_weapon :: (parent : Entity, target: Entity.Tag, time : float) -> *Entity {
-        weapon := new_entity(Weapon);
+        weapon := new_entity(Damage_Area);
         weapon.look_for = target;
         weapon.position = parent.position;
         weapon.position += forward(parent.direction);

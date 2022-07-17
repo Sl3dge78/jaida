@@ -1,5 +1,4 @@
 
-
 Entity :: struct {
     Tag :: enum {
         NONE;
@@ -38,7 +37,7 @@ Entity :: struct {
     health: int = 4;
     immunity: float;
 
-    on_interact : (*Entity) = null;
+    on_interact : (*Entity, *Player) = null;
 
     IMMUNITY_TIME :: 1;
 
@@ -130,10 +129,10 @@ Entity :: struct {
         if ett.health <= 0 then ett.flags |= .SHOULD_DELETE;
     }
 
-    interact :: (ett: *Entity) {
+    interact :: (ett: *Entity, player: *Player) {
         if ett.flags & .INTERACTABLE { 
             if ett.on_interact {
-                ett.on_interact(ett);
+                ett.on_interact(ett, player);
             }         
         }
     }
@@ -168,6 +167,7 @@ Player :: struct {
     anim_time   : float;
 
     keys : int;
+    can_attack : bool;
 
     simulate :: (using player : *Player, delta_time : float) { 
         update_immunity(xx player, delta_time);
@@ -202,7 +202,7 @@ Player :: struct {
             }
 
             // Attack
-            if Input.input_button_states[Input.Key_Code.SPACEBAR] & .START {
+            if can_attack && Input.input_button_states[Input.Key_Code.SPACEBAR] & .START {
                 state = .ATTACKING;
                 sprite.y = 2;
                 attack_time = 0.2;
@@ -213,10 +213,10 @@ Player :: struct {
 
             if Input.input_button_states[#char "E"] & .START {
                 interacted_tile : Vector2i = Vector2i.from(position + forward(direction));
-                Basic.log("%", interacted_tile);
+                Basic.log("Interacting with: %", interacted_tile);
                 for context.game.entities {
                     if Vector2i.from(it.position) == interacted_tile {
-                        Entity.interact(it);
+                        Entity.interact(it, player);
                     }
                 }
             }
@@ -346,7 +346,7 @@ Teleporter :: struct {
     }
 }
 
-Weapon :: struct {
+Damage_Area :: struct {
     using e: Entity;
     tag = .WEAPON;
     flags = .ORIENT_HITBOX;
@@ -354,7 +354,7 @@ Weapon :: struct {
     look_for: Entity.Tag = .NONE; // What kind of hitboxes to search. Used to give
     time_left: float;
 
-    simulate :: (using weapon: *Weapon, delta_time: float) { 
+    simulate :: (using weapon: *Damage_Area, delta_time: float) { 
         time_left -= delta_time;
         if time_left <= 0 then e.flags |= .SHOULD_DELETE;
         o0, o1 := Entity.orient_hitbox(e);
@@ -396,8 +396,7 @@ Door :: struct {
     on_interact = try_open;
     e.flags = Entity.Flag.SOLID | .INTERACTABLE;
 
-    try_open :: (e: *Entity) {
-        player := Game.get_player();
+    try_open :: (e: *Entity, player: *Player) {
         if player.keys > 0 {
             e.flags |= .SHOULD_DELETE;
             player.keys -= 1;

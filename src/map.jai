@@ -4,6 +4,14 @@ MAP_HEIGHT :: 22;
 MAP_LAYERS :: 4; // 3 Sprite layers, 1 collision layer
 COLLISION_LAYER :: 3;
 
+TOWN_SOUTH :: Vector2i.{0, 0};
+TOWN_NORTH :: Vector2i.{0, 1};
+HOME :: Vector2i.{-1, 0};
+CHIEFS_HOUSE :: Vector2i.{-2, 0};
+DOJO :: Vector2i.{-3, 0};
+HOUSE_1 :: Vector2i.{-4, 0};
+RESTAURANT :: Vector2i.{-5, 0};
+
 Map_Type :: [MAP_LAYERS][MAP_WIDTH*MAP_HEIGHT]u32;
 
 Map :: struct {
@@ -41,7 +49,6 @@ Map :: struct {
     }
 
     save :: (using map : Map, world_pos : Vector2i) {
-        Basic.log("world_pos: % %", world_pos, get_map_file_name(world_pos));
         if !File.write_entire_file(get_map_file_name(world_pos), tiles.data, MAP_LAYERS * MAP_WIDTH * MAP_HEIGHT * size_of(type_of(tiles[0][0]))){
             Basic.log_error("Unable to save map!");
         }

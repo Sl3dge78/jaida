@@ -239,17 +239,29 @@ Game :: struct {
 
     // @Temporary : Until we have entity loading.
     load_entities :: (map_pos : Vector2i) {
-        if map_pos == .{-1, 0} { // Interior
-            create_teleporter(.{14, 8}, .{12, 15}, .{0, 0});
-            create_teleporter(.{15, 8}, .{12, 15}, .{0, 0});
-        } else if map_pos == .{0, 0} { // Town South
-            create_teleporter(.{12, 16}, .{14.5, 9}, .{-1, 0}); // To home
-            create_teleporter(.{3, 13}, .{14.5, 9}, .{-2, 0}); // To chiefs house
-            create_teleporter(.{11, 6}, .{14, 9}, .{-3, 0}); // To dojo
-            create_teleporter(.{12, 6}, .{15, 9}, .{-3, 0}); // To dojo
-            create_teleporter(.{22, 18}, .{14.5, 9}, .{-4, 0}); // Other home
-            create_teleporter(.{28, 16}, .{14.5, 9}, .{-5, 0}); // Restaurant
-        } else if map_pos == .{0, 1} { // Town North
+        if map_pos == HOME { // Interior
+            create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
+            create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
+        } else if map_pos == DOJO { 
+            create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
+        } else if map_pos == CHIEFS_HOUSE { 
+            create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
+        } else if map_pos == RESTAURANT { 
+            create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 8}, .{29, 15.4}, TOWN_SOUTH);
+        } else if map_pos == HOUSE_1 { 
+            create_teleporter(.{17, 8}, .{22, 17.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 8}, .{22, 17.4}, TOWN_SOUTH);
+        } else if map_pos == TOWN_SOUTH { // Town South
+            create_teleporter(.{12, 16}, .{14.5, 8.5}, HOME); 
+            create_teleporter(.{4, 13}, .{17.5, 8.5}, CHIEFS_HOUSE); 
+            create_teleporter(.{11, 6}, .{17.5, 7.5}, DOJO); 
+            create_teleporter(.{12, 6}, .{17.5, 7.5}, DOJO); 
+            create_teleporter(.{22, 18}, .{17.5, 8.5}, HOUSE_1); 
+            create_teleporter(.{29, 16}, .{17.5, 8.5}, RESTAURANT); // Restaurant
+        } else if map_pos == TOWN_NORTH { // Town North
             create_bush(.{18, 14});
             create_bush(.{18, 8});
             create_bush(.{16, 8});

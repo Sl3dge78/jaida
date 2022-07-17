@@ -2,15 +2,11 @@
 # In-Progress 
 
 # Inbox 
-- [ ] Save state: When we destroy the bushes, they come back
-- [ ] Quest tracker of sorts (not necessarily UI)
-- [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
-- [ ] Make the key bob up & down
-- [ ] Make the characters bob up & down?
 
 ## System
-- [ ] Puzzles (push blocks?)
+- [ ] Projectile entity type
 - [ ] HUD with health
+- [ ] Puzzles (push blocks?)
 - [ ] Enemy health?
 
 ## Content
@@ -22,8 +18,32 @@
     - [ ] Go to the castle
     - [ ] Find castle key
     - [ ] Kill boss in castle
+- [ ] NPCs
+    - [ ] Walks random
+    - [ ] Hits things (dojo)
+    - [ ] Doesn't move (chief & sensei)
+- [ ] Level Design
+    - [ ] TOWN_SOUTH
+        - [ ] NPCs
+    - [X] -1, 0
+    - [ ] CHIEFS_HOUSE
+    - [ ] DOJO
+    - [ ] HOUSE_1
+    - [ ] RESTAURANT
+    - [ ] TOWN_NORTH
+    - [ ] 0, 1
+    - [ ] 1, 1
+    - ...
+- [ ] Enemy Variety
+    - [ ] Forest creatures
+    - [ ] Ranged human
 
 # To consider
+- [ ] Make the key bob up & down
+- [ ] Make the characters bob up & down?
+- [ ] Save state: When we destroy the bushes, they come back
+- [ ] Quest tracker of sorts (not necessarily UI)
+- [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
 - [ ] Better audio system, using the callback. 
     - (Dialog) queue x blipblips
 - [ ] Have some components that update not every frame

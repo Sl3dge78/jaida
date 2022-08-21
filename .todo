@@ -35,8 +35,9 @@
     - [ ] 1, 1
     - ...
 - [ ] Enemy Variety
-    - [ ] Forest creatures
+    - [X] Forest creatures
     - [ ] Ranged human
+    - [X] Patrol
 
 # To consider
 - [ ] Make the key bob up & down

@@ -32,6 +32,15 @@ Entity :: struct {
     sprite_sheet : *Simp.Texture = null;
     sprite : Vector2i;
 
+    anim_time : float;
+    Anim_State :: enum {
+        IDLE;
+        WALKING;
+        WINDUP;
+        ATTACKING;
+    };
+    anim_state : Anim_State;
+
     // To deal damage
     hit_tag : Tag;
     health: int = 4;
@@ -98,15 +107,39 @@ Entity :: struct {
             }
         }
         return o0, o1;
-        
     }
 
-    Anim_State :: enum {
-        IDLE;
-        WALKING;
-        WINDUP;
-        ATTACKING;
-    };
+    set_direction_from_velocity :: (using e: *Entity, vel: Vector2) {
+        if abs(vel.x) > abs(vel.y) {
+            if vel.x > 0 then {
+                direction = Direction.EAST;
+            } else {
+                direction = Direction.WEST;
+            }
+        } else {
+            if vel.y > 0 {
+                direction = Direction.NORTH;
+            } else {
+                direction = Direction.SOUTH;
+            }
+        }
+    }
+
+    move_towards :: (using e: *Entity, dest: Vector2, speed: float, delta_time: float) {
+        dir := Math.unit_vector(dest - e.position);
+        vel := dir * delta_time * speed;
+        final_vel := Game.move_and_slide(e, vel, context.game.current_map);
+
+        Entity.set_direction_from_velocity(e, vel);
+
+        if Math.length(final_vel) > 0 {
+            anim_time += delta_time;
+            if anim_time > 1.0 then anim_time = 0;
+            anim_state = .WALKING;
+        } else {
+            anim_state = .IDLE;
+        }
+    }
 
     get_sprite :: (state : Anim_State, anim_time: float, direction : Direction) -> Vector2i {
         result : Vector2i = ---;
@@ -148,13 +181,13 @@ Entity :: struct {
         }
 
     }
-}
 
-tree := Dialog.Node.[
-    Dialog.Node.{lines = .["Hello, I'm a chest!","And this is a second line!", "How many lines can you fit here?"], jumps = .[1]},
-    Dialog.Node.{has_title = true, lines = .["Chest", "Hey I have a title now!"], jumps = .[2] },
-    Dialog.Node.{has_title = true, lines = .["Chest", "Go back to the start?", "Yes", "No"], jumps = .[0, -1]},
-];
+    intersects_entity :: (e1: *Entity, e2: *Entity) -> bool {
+        e1_0, e1_1 := Entity.orient_hitbox(e1);
+        e2_0, e2_1 := Entity.orient_hitbox(e2);
+        return Game.rect_intersects(e1_0 + e1.position, e1_1 + e1.position, e2_0 + e2.position, e2_1 + e2.position);
+    }
+}
 
 Player :: struct {
     using e: Entity;
@@ -162,9 +195,7 @@ Player :: struct {
     tag = .PLAYER;
     hit_tag = .PLAYER;
 
-    state : Entity.Anim_State;
     attack_time : float;
-    anim_time   : float;
 
     keys : int;
     can_attack : bool;
@@ -172,7 +203,7 @@ Player :: struct {
     simulate :: (using player : *Player, delta_time : float) { 
         update_immunity(xx player, delta_time);
 
-        if state != .ATTACKING {
+        if anim_state != .ATTACKING {
             // Movement
             vel : Vector2;
             if Input.input_button_states[#char "W"] & .DOWN {
@@ -195,21 +226,21 @@ Player :: struct {
             if Math.length(norm_vel) > 0 { 
                 anim_time += delta_time;
                 if anim_time > 1.0 then anim_time = 0;
-                state = .WALKING;
+                anim_state = .WALKING;
                 Game.move_and_slide(*e, norm_vel, context.game.current_map);
             } else {
-                state = .IDLE;
+                anim_state = .IDLE;
             }
 
             // Attack
             if can_attack && Input.input_button_states[Input.Key_Code.SPACEBAR] & .START {
-                state = .ATTACKING;
+                anim_state = .ATTACKING;
                 sprite.y = 2;
                 attack_time = 0.2;
                 Game.create_weapon(e, .ENEMY, attack_time);
             }
 
-            sprite = Entity.get_sprite(state, anim_time, direction);
+            sprite = Entity.get_sprite(anim_state, anim_time, direction);
 
             if Input.input_button_states[#char "E"] & .START {
                 interacted_tile : Vector2i = Vector2i.from(position + forward(direction));
@@ -222,82 +253,97 @@ Player :: struct {
             }
         } else {
             attack_time -= delta_time;
-            if attack_time <= 0 then state = .IDLE;
+            if attack_time <= 0 then anim_state = .IDLE;
+        }
+    }
+}
+
+Patrol_Behavior :: struct {
+    points: []Vector2;
+    next_point : int;
+    wait_time : float;
+    wait_timer : float;
+
+    do_the_patrol :: (e : *Entity, using patrol: *Patrol_Behavior, delta_time: float) {
+        if wait_timer > 0 then wait_timer -= delta_time;
+        if wait_timer <= 0 {
+            distance_to_next_point := Math.distance(e.position, points[next_point]);
+            if distance_to_next_point <= 0.2 {
+                next_point += 1;
+                wait_timer += wait_time;
+                if next_point >= points.count then next_point = 0;
+            }
+            Entity.move_towards(e, points[next_point], 3, delta_time);
         }
     }
 }
 
 Enemy :: struct { 
-    using e : Entity;
+    using #as e: Entity;
     tag = .ENEMY;
     hit_tag = .ENEMY;
+    damage := 1;
 
-    is_aggroed : bool;
-    combat_phase : enum {
+    Type :: enum {
+        HUMANOID;
+        FOLLOW;
+    }
+    type: Type;
+    patrol: Patrol_Behavior;
+
+    is_aggroed: bool;
+    combat_phase: enum {
         NOT_AGGROED;
         APPROACHING;
         WINDUP;
         ATTACK;
     }
-    state : Anim_State;
-    combat_timer : float;
-    anim_time : float;
+    state: Anim_State;
+    combat_timer: float;
 
     WINDUP_TIME :: 0.5;
     ATTACK_TIME :: 0.2;
 
-    AGGRO_DIST :: 10;
-    DEAGGRO_DIST :: 10;
+    aggro_dist := 5;
+    deaggro_dist := 5;
+    holds_key := false;
 
     simulate :: (using enemy: *Enemy, delta_time: float) {
         update_immunity(xx enemy, delta_time);
 
+        if holds_key && enemy.health <= 0 {
+            key := Game.create_key(enemy.position);
+        }
+
         player := Game.get_player();
         distance := Math.distance(player.position, position);
 
-        if distance > DEAGGRO_DIST || player.world_pos != world_pos {
+        if distance > xx deaggro_dist || player.world_pos != world_pos {
             combat_phase = .NOT_AGGROED;
             //npc_move.state = .IDLE;
         }
 
         if #complete combat_phase == {
             case .NOT_AGGROED; {
+                if patrol.points.count > 0 {
+                    Patrol_Behavior.do_the_patrol(*e, *patrol, delta_time);
+                }
                 // NPC_Move.update(*npc_move, delta_time);
-                if distance < AGGRO_DIST then {
+                if distance < xx aggro_dist then {
                     combat_phase = .APPROACHING;
                 }
             }
             case .APPROACHING; {
                 if distance < 1 {
-                    combat_phase = .WINDUP;
-                    state = .WINDUP;
-                    combat_timer = WINDUP_TIME;
+                    if type == .HUMANOID {
+                        combat_phase = .WINDUP;
+                        state = .WINDUP;
+                        combat_timer = WINDUP_TIME;
+                    } else {
+                        Entity.deal_damage(xx player, damage);
+                    }
                 } else {
-                    dir := Math.unit_vector(player.position - position);
-                    vel := dir * delta_time * 3.0;
-                    final_vel := Game.move_and_slide(*e, vel, context.game.current_map);
-
-                    if abs(final_vel.x) > abs(final_vel.y) {
-                        if final_vel.x > 0 then {
-                            direction = Direction.EAST;
-                        } else {
-                            direction = Direction.WEST;
-                        }
-                    } else {
-                        if final_vel.y > 0 {
-                            direction = Direction.NORTH;
-                        } else {
-                            direction = Direction.SOUTH;
-                        }
-                    }
-
-                    if Math.length(final_vel) > 0 {
-                        anim_time += delta_time;
-                        if anim_time > 1.0 then anim_time = 0;
-                        state = .WALKING;
-                    } else {
-                        state = .IDLE;
-                    }
+                    Entity.move_towards(*e, player.position, 3, delta_time);
                 }
             }
             case .WINDUP; {
@@ -357,14 +403,12 @@ Damage_Area :: struct {
     simulate :: (using weapon: *Damage_Area, delta_time: float) { 
         time_left -= delta_time;
         if time_left <= 0 then e.flags |= .SHOULD_DELETE;
-        o0, o1 := Entity.orient_hitbox(e);
     
         for context.game.entities { 
             if it.hit_tag == .NONE then continue;
             if it.hit_tag != look_for then continue;
-            it_o0, it_o1 := Entity.orient_hitbox(it);
-            collides := Game.rect_intersects(o0 + position, o1 + position, it.p0 + it.position, it.p1 + it.position);
-            if collides {
+            
+            if Entity.intersects_entity(*e, it){
                 Entity.deal_damage(it, 1);
             }
         }
@@ -403,6 +447,19 @@ Door :: struct {
         } else {
             Dialog.open(no_key_dialog);
         }
+    }
+}
+
+NPC :: struct {
+    using #as e : Entity;
+    e.on_interact = show_dialog;
+    e.flags = Entity.Flag.SOLID | .INTERACTABLE;
+
+    dialog : []Dialog.Node;
+
+    show_dialog :: (e: *Entity, player: *Player) {
+        npc := cast(*NPC)e;
+        Dialog.open(npc.dialog);
     }
 }
 

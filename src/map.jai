@@ -6,6 +6,9 @@ COLLISION_LAYER :: 3;
 
 TOWN_SOUTH :: Vector2i.{0, 0};
 TOWN_NORTH :: Vector2i.{0, 1};
+FOREST_1 :: Vector2i.{1, 0};
+MINIBOSS :: Vector2i.{1, 2};
+CASTLE_ENTRANCE :: Vector2i.{2,2};
 HOME :: Vector2i.{-1, 0};
 CHIEFS_HOUSE :: Vector2i.{-2, 0};
 DOJO :: Vector2i.{-3, 0};

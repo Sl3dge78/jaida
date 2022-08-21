@@ -80,8 +80,11 @@ Game :: struct {
 
     blue_samurai_texture : Simp.Texture;
     red_samurai_texture  : Simp.Texture;
+    old_woman_texture    : Simp.Texture;
     katana_texture       : Simp.Texture;
     key_texture          : Simp.Texture;
+    mushroom_texture     : Simp.Texture;
+    snake_texture        : Simp.Texture;
 
     entities : [..]* Entity;
 
@@ -116,6 +119,11 @@ Game :: struct {
 
         load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
         load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
+
+        load_texture_no_filter(*old_woman_texture, "res/old_woman.png");
+
+        load_texture_no_filter(*mushroom_texture, "res/mushroom.png");
+        load_texture_no_filter(*snake_texture, "res/snake.png");
         load_texture_no_filter(*katana_texture, "res/katana.png");
         load_texture_no_filter(*key_texture, "res/key.png");
 
@@ -242,6 +250,7 @@ Game :: struct {
         if map_pos == HOME { // Interior
             create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
             create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
+            
         } else if map_pos == DOJO { 
             create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
@@ -251,6 +260,7 @@ Game :: struct {
         } else if map_pos == RESTAURANT { 
             create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{29, 15.4}, TOWN_SOUTH);
+            create_npc(.{14, 9}, Direction.NORTH, *context.game.old_woman_texture, dialog_restaurant_1);
         } else if map_pos == HOUSE_1 { 
             create_teleporter(.{17, 8}, .{22, 17.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{22, 17.4}, TOWN_SOUTH);
@@ -276,6 +286,32 @@ Game :: struct {
             x, y := tile_id_to_xy(*context.game.map_texture, 2611);
             chest.sprite.x = xx x;
             chest.sprite.y = xx y;
+        } else if map_pos == FOREST_1 { 
+            mush := create_enemy(.{10, 12}, *context.game.mushroom_texture, .FOLLOW);
+            mush.patrol.points = .[.{10, 12}, .{20, 12}];
+            mush.patrol.wait_time = 1.0;
+
+            mush2 := create_enemy(.{17, 3}, *context.game.mushroom_texture, .FOLLOW);
+            mush2.patrol.points = .[.{17, 3}, .{6, 3}];
+            mush2.patrol.wait_time = 1.0;
+
+            mush3 := create_enemy(.{21, 13}, *context.game.mushroom_texture, .FOLLOW);
+            mush3.patrol.points = .[.{21, 13}, .{21, 3}];
+            mush3.patrol.wait_time = .5;
+
+            mush4 := create_enemy(.{30, 10}, *context.game.mushroom_texture, .FOLLOW);
+            mush4.patrol.points = .[.{30, 10}, .{35, 10}, .{36, 4}, .{30, 4}];
+
+            snake := create_enemy(.{14, 18}, *context.game.snake_texture, .FOLLOW);
+            snake.health = 8;
+            snake.damage = 2;
+            snake.deaggro_dist = 6;
+        } else if map_pos == MINIBOSS {
+            miniboss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);
+            miniboss.holds_key = true;
+        } else if map_pos == CASTLE_ENTRANCE {
+            door := create_door(.{29, 5});
+            // TODO : Set sprite
         }
     }
 
@@ -289,7 +325,7 @@ Game :: struct {
 
     new_entity :: ($type : Type) -> *type {
         e := Basic.New(type);
-        Basic.array_add(*context.game.entities, e);
+        Basic.array_add(*context.game.entities, xx e);
         e.world_pos = context.game.current_world_pos;
         return e;
     }
@@ -303,11 +339,11 @@ Game :: struct {
         return player;
     }
 
-    create_enemy :: (pos : Vector2) -> *Entity {
+    create_enemy :: (pos : Vector2, texture: *Simp.Texture, type: Enemy.Type) -> *Enemy {
         e := new_entity(Enemy);
-        e.sprite_sheet = *context.game.red_samurai_texture;
+        e.sprite_sheet = texture;
+        e.type = type;
         e.position = pos;
-        e.world_pos = context.game.current_world_pos;
         e.flags |= .SOLID;
         return e;
     }
@@ -326,8 +362,7 @@ Game :: struct {
         weapon.time_left = time;
         weapon.sprite_sheet = *context.game.katana_texture;
         weapon.sprite.x = xx weapon.direction;
-        Basic.log("pos: %", weapon.position);
-        return weapon;
+        return xx weapon;
     }
 
     create_teleporter :: (pos : Vector2, new_pos : Vector2, new_world_pos : Vector2i) -> *Teleporter {
@@ -369,6 +404,15 @@ Game :: struct {
         x, y := tile_id_to_xy(*context.game.map_texture, 3414);
         e.sprite.x = xx x;
         e.sprite.y = xx y;
+    }
+
+    create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture, dialog : []Dialog.Node) {
+        e := new_entity(NPC);
+        e.position = pos;
+        e.direction = direction;
+        e.sprite_sheet = texture;
+        e.dialog = dialog;
+        e.sprite = Entity.get_sprite(.IDLE, 0, direction);
     }
 
     /// Computes a new velocity that avoids map obstacles

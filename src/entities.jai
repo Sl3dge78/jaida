@@ -47,6 +47,7 @@ Entity :: struct {
     immunity: float;
 
     on_interact : (*Entity, *Player) = null;
+    on_death    : (*Entity) = null;
 
     IMMUNITY_TIME :: 1;
 
@@ -159,7 +160,10 @@ Entity :: struct {
             ett.health -= amount;
             ett.immunity = IMMUNITY_TIME;
         }
-        if ett.health <= 0 then ett.flags |= .SHOULD_DELETE;
+        if ett.health <= 0 { 
+            if ett.on_death then ett.on_death(ett);
+            ett.flags |= .SHOULD_DELETE;
+        }
     }
 
     interact :: (ett: *Entity, player: *Player) {
@@ -306,21 +310,16 @@ Enemy :: struct {
 
     aggro_dist := 5;
     deaggro_dist := 5;
-    holds_key := false;
 
     simulate :: (using enemy: *Enemy, delta_time: float) {
         update_immunity(xx enemy, delta_time);
-
-        if holds_key && enemy.health <= 0 {
-            key := Game.create_key(enemy.position);
-        }
 
         player := Game.get_player();
         distance := Math.distance(player.position, position);
 
         if distance > xx deaggro_dist || player.world_pos != world_pos {
             combat_phase = .NOT_AGGROED;
-            //npc_move.state = .IDLE;
+            // npc_move.state = .IDLE;
         }
 
         if #complete combat_phase == {

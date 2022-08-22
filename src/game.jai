@@ -100,6 +100,16 @@ Game :: struct {
     dialog_nb_chars: int;
     dialog_blip : Audio_Stream;
 
+    // Quest
+    main_quest_state : enum {
+        START;
+        SWORD_OK;
+        TRAINING_OK;
+        QUEST_ACCEPTED;
+        KEY_GOT;
+        BOSS_KILLED;
+    };
+
     // This is a timer that is reset every second
     second : float;
 
@@ -254,11 +264,25 @@ Game :: struct {
         } else if map_pos == DOJO { 
             create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
-            create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture, dialog_dojo_master_1);
+            sensei_dialog : []Dialog.Node;
+            if context.game.main_quest_state == {
+                case .START; sensei_dialog = dialog_dojo_master_1;
+                case .SWORD_OK; sensei_dialog = dialog_dojo_master_2;
+                case .TRAINING_OK; sensei_dialog = dialog_dojo_master_3;
+                case .BOSS_KILLED;  sensei_dialog = dialog_dojo_master_complete;
+                case; sensei_dialog = dialog_dojo_master_4;
+            }
+            create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture, sensei_dialog);
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
-            create_npc(.{17, 11}, Direction.SOUTH, *context.game.old_woman_texture, dialog_chief_1);
+            chief_dialog : []Dialog.Node;
+            if context.game.main_quest_state == {
+                case .START; chief_dialog = dialog_chief_1;
+                case .TRAINING_OK; chief_dialog = dialog_chief_2;
+                case; chief_dialog = dialog_chief_3;
+            }
+            create_npc(.{17, 11}, Direction.SOUTH, *context.game.old_woman_texture, chief_dialog);
         } else if map_pos == RESTAURANT { 
             create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{29, 15.4}, TOWN_SOUTH);
@@ -311,7 +335,9 @@ Game :: struct {
             snake.deaggro_dist = 6;
         } else if map_pos == MINIBOSS {
             miniboss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);
-            miniboss.holds_key = true;
+            miniboss.on_death = (e : *Entity) {
+                Game.create_key(e.position);
+            };
         } else if map_pos == CASTLE_ENTRANCE {
             door := create_door(.{29, 5});
             // TODO : Set sprite

@@ -250,17 +250,20 @@ Game :: struct {
         if map_pos == HOME { // Interior
             create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
             create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
-            
+            create_npc(.{20, 12}, Direction.SOUTH, *context.game.old_woman_texture, dialog_father_1);
         } else if map_pos == DOJO { 
             create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
+            create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture, dialog_dojo_master_1);
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
+            create_npc(.{17, 11}, Direction.SOUTH, *context.game.old_woman_texture, dialog_chief_1);
         } else if map_pos == RESTAURANT { 
             create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{29, 15.4}, TOWN_SOUTH);
             create_npc(.{14, 9}, Direction.NORTH, *context.game.old_woman_texture, dialog_restaurant_1);
+            create_npc(.{19, 11}, Direction.SOUTH, *context.game.old_woman_texture, dialog_restaurant_2);
         } else if map_pos == HOUSE_1 { 
             create_teleporter(.{17, 8}, .{22, 17.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{22, 17.4}, TOWN_SOUTH);

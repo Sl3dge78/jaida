@@ -131,7 +131,6 @@ Component_Manager :: struct {
         return comp;
     }
 
-
     get_component_storage :: ($component : $T, $$inactive : bool) -> *Bucket_Array(component, 1) {
         #if is_constant(inactive) {
             #insert #run -> string {

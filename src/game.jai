@@ -303,12 +303,13 @@ Game :: struct {
             create_bush(.{18, 8});
             create_bush(.{16, 8});
             create_bush(.{14, 8});
-        } else if map_pos == .{1, 1} {
+        } else if map_pos == .{1, 1} { // FOREST NORTH
             create_bush(.{5, 11});
+            create_bush(.{5, 10});
             chest := new_entity(Entity);
             chest.flags |= Entity.Flag.INTERACTABLE | .SOLID;
             chest.on_interact = player_get_weapon;
-            chest.position = .{21, 11};
+            chest.position = .{21, 15};
             chest.sprite_sheet = *context.game.map_texture;
             x, y := tile_id_to_xy(*context.game.map_texture, 2611);
             chest.sprite.x = xx x;

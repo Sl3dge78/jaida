@@ -33,6 +33,7 @@ round :: (x : float32) -> float32 {
 #load "dialog.jai";
 #load "dialogs.jai";
 #load "audio.jai";
+#load "npc.jai";
 #if DEVELOPER {
     #load "editor.jai";
 }

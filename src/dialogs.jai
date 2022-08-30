@@ -14,7 +14,7 @@ player_get_weapon :: (e: *Entity, player: *Player) {
    Dialog.open(player_get_weapon_dialog);
 
    // Remove interaction and open the chest
-   e.flags = e.flags & ~.INTERACTABLE;
+   e.on_interact = null;
    x, y := tile_id_to_xy(*context.game.map_texture, 2679);
    e.sprite.x = xx x;
    e.sprite.y = xx y;

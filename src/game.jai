@@ -260,34 +260,21 @@ Game :: struct {
         if map_pos == HOME { // Interior
             create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
             create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
-            create_npc(.{20, 12}, Direction.SOUTH, *context.game.old_woman_texture, dialog_father_1);
+            create_dialog_npc(.{21, 12}, Direction.SOUTH, *context.game.old_woman_texture, dialog_father_1);
         } else if map_pos == DOJO { 
             create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
-            sensei_dialog : []Dialog.Node;
-            if context.game.main_quest_state == {
-                case .START; sensei_dialog = dialog_dojo_master_1;
-                case .SWORD_OK; sensei_dialog = dialog_dojo_master_2;
-                case .TRAINING_OK; sensei_dialog = dialog_dojo_master_3;
-                case .BOSS_KILLED;  sensei_dialog = dialog_dojo_master_complete;
-                case; sensei_dialog = dialog_dojo_master_4;
-            }
-            create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture, sensei_dialog);
+            sensei := create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture);
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
-            chief_dialog : []Dialog.Node;
-            if context.game.main_quest_state == {
-                case .START; chief_dialog = dialog_chief_1;
-                case .TRAINING_OK; chief_dialog = dialog_chief_2;
-                case; chief_dialog = dialog_chief_3;
-            }
-            create_npc(.{17, 11}, Direction.SOUTH, *context.game.old_woman_texture, chief_dialog);
+            chief := create_npc(.{17, 11}, Direction.SOUTH, *context.game.old_woman_texture);
+            chief.on_interact = chief_on_interact;
         } else if map_pos == RESTAURANT { 
             create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{29, 15.4}, TOWN_SOUTH);
-            create_npc(.{14, 9}, Direction.NORTH, *context.game.old_woman_texture, dialog_restaurant_1);
-            create_npc(.{19, 11}, Direction.SOUTH, *context.game.old_woman_texture, dialog_restaurant_2);
+            create_dialog_npc(.{14, 9}, Direction.NORTH, *context.game.old_woman_texture, dialog_restaurant_1);
+            create_dialog_npc(.{19, 11}, Direction.SOUTH, *context.game.old_woman_texture, dialog_restaurant_2);
         } else if map_pos == HOUSE_1 { 
             create_teleporter(.{17, 8}, .{22, 17.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{22, 17.4}, TOWN_SOUTH);
@@ -306,14 +293,21 @@ Game :: struct {
         } else if map_pos == .{1, 1} { // FOREST NORTH
             create_bush(.{5, 11});
             create_bush(.{5, 10});
+
             chest := new_entity(Entity);
-            chest.flags |= Entity.Flag.INTERACTABLE | .SOLID;
-            chest.on_interact = player_get_weapon;
-            chest.position = .{21, 15};
+            chest.flags |= .SOLID;
             chest.sprite_sheet = *context.game.map_texture;
-            x, y := tile_id_to_xy(*context.game.map_texture, 2611);
-            chest.sprite.x = xx x;
-            chest.sprite.y = xx y;
+            chest.position = .{21, 15};
+            if (context.game.main_quest_state < .SWORD_OK) {
+                chest.on_interact = player_get_weapon;
+                x, y := tile_id_to_xy(*context.game.map_texture, 2611);
+                chest.sprite.x = xx x;
+                chest.sprite.y = xx y;
+            } else {
+                x, y := tile_id_to_xy(*context.game.map_texture, 2679);
+                chest.sprite.x = xx x;
+                chest.sprite.y = xx y;
+            }
         } else if map_pos == FOREST_1 { 
             mush := create_enemy(.{10, 12}, *context.game.mushroom_texture, .FOLLOW);
             mush.patrol.points = .[.{10, 12}, .{20, 12}];
@@ -436,13 +430,23 @@ Game :: struct {
         e.sprite.y = xx y;
     }
 
-    create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture, dialog : []Dialog.Node) {
+    create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture) -> *Entity{
         e := new_entity(NPC);
+        e.position = pos;
+        e.direction = direction;
+        e.sprite_sheet = texture;
+        e.sprite = Entity.get_sprite(.IDLE, 0, direction);
+        return e;
+    }
+
+    create_dialog_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture, dialog : []Dialog.Node) -> *Entity{
+        e := new_entity(Dialog_NPC);
         e.position = pos;
         e.direction = direction;
         e.sprite_sheet = texture;
         e.dialog = dialog;
         e.sprite = Entity.get_sprite(.IDLE, 0, direction);
+        return e;
     }
 
     /// Computes a new velocity that avoids map obstacles

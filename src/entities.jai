@@ -13,7 +13,6 @@ Entity :: struct {
     Flag :: enum_flags {
         SHOULD_DELETE;
         SOLID;
-        INTERACTABLE;
         ORIENT_HITBOX;
     };
     flags : Flag;
@@ -167,11 +166,9 @@ Entity :: struct {
     }
 
     interact :: (ett: *Entity, player: *Player) {
-        if ett.flags & .INTERACTABLE { 
-            if ett.on_interact {
-                ett.on_interact(ett, player);
-            }         
-        }
+        if ett.on_interact {
+            ett.on_interact(ett, player);
+        }         
     }
 
     update_immunity :: (using ett: *Entity, delta_time: float) {
@@ -437,7 +434,7 @@ Pickup :: struct {
 Door :: struct {
     using e: Entity;
     on_interact = try_open;
-    e.flags = Entity.Flag.SOLID | .INTERACTABLE;
+    e.flags = Entity.Flag.SOLID;
 
     try_open :: (e: *Entity, player: *Player) {
         if player.keys > 0 {
@@ -451,13 +448,17 @@ Door :: struct {
 
 NPC :: struct {
     using #as e : Entity;
+}
+
+Dialog_NPC :: struct {
+    using #as e : Entity;
     e.on_interact = show_dialog;
-    e.flags = Entity.Flag.SOLID | .INTERACTABLE;
+    e.flags = Entity.Flag.SOLID;
 
     dialog : []Dialog.Node;
 
     show_dialog :: (e: *Entity, player: *Player) {
-        npc := cast(*NPC)e;
+        npc := cast(*Dialog_NPC)e;
         Dialog.open(npc.dialog);
     }
 }

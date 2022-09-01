@@ -107,6 +107,7 @@ Game :: struct {
         TRAINING_OK;
         QUEST_ACCEPTED;
         KEY_GOT;
+        DOOR_OPEN;
         BOSS_KILLED;
     };
 
@@ -329,13 +330,46 @@ Game :: struct {
             snake.damage = 2;
             snake.deaggro_dist = 6;
         } else if map_pos == MINIBOSS {
-            miniboss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);
-            miniboss.on_death = (e : *Entity) {
-                Game.create_key(e.position);
-            };
+            if context.game.main_quest_state < .KEY_GOT {
+                miniboss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);
+                miniboss.on_death = (e : *Entity) {
+                    Game.create_key(e.position);
+                };
+            }
         } else if map_pos == CASTLE_ENTRANCE {
-            door := create_door(.{29, 5});
+            create_teleporter(.{33, 14}, .{19, 6.5}, DUNGEON); 
+            create_door_part :: (tile_id : u32, pos : Vector2) -> *Entity {
+                e := new_entity(Entity);
+                e.position = pos;
+                e.sprite_sheet = *context.game.map_texture;
+                x, y := tile_id_to_xy(*context.game.map_texture, tile_id);
+                e.sprite.x = xx x;
+                e.sprite.y = xx y;
+                return e;
+            }
+
+            if context.game.main_quest_state < .DOOR_OPEN {
+                door := create_door(.{28, 5});
+                door.tiles[0] = create_door_part(3448, .{27, 6});
+                door.tiles[1] = create_door_part(3449, .{28, 6});
+                door.tiles[2] = create_door_part(3450, .{29, 6});
+                door.tiles[3] = create_door_part(3384, .{27, 5});
+                door.tiles[4] = create_door_part(3385, .{28, 5});
+                door.tiles[5] = create_door_part(3386, .{29, 5});
+            } else {
+                create_door_part(3640, .{27, 6});
+                create_door_part(3641, .{28, 6});
+                create_door_part(3642, .{29, 6});
+                create_door_part(3576, .{27, 5});
+                create_door_part(3577, .{28, 5});
+                create_door_part(3578, .{29, 5});
+            }
+            
             // TODO : Set sprite
+        } else if map_pos == DUNGEON {
+            create_teleporter(.{18, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
+            create_teleporter(.{19, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
+            create_teleporter(.{20, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
         }
     }
 
@@ -420,14 +454,11 @@ Game :: struct {
         e.pickup_type = .KEY;
     }
 
-    create_door :: (pos: Vector2){
+    create_door :: (pos: Vector2) -> *Door{
         e := new_entity(Door);
         e.position = pos;
         e.world_pos = context.game.current_world_pos;
-        e.sprite_sheet = *context.game.map_texture;
-        x, y := tile_id_to_xy(*context.game.map_texture, 3414);
-        e.sprite.x = xx x;
-        e.sprite.y = xx y;
+        return e;
     }
 
     create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture) -> *Entity{

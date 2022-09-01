@@ -5,16 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug",
+            "type": "gdb",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/build.exe",
-            "type": "lldb",
-            "windows": {
-                "type": "lldb",
-                "request": "launch",
-                "program": "${workspaceFolder}/bin/build.exe",
-                "cwd": "${workspaceFolder}/bin",
-            },
-        }
+            "name": "Launch Program",
+            "target": "${workspaceRoot}/bin/build",
+            "cwd": "${workspaceRoot}/bin",
+            "valuesFormatting": "parseText"
+        },
     ]
 }

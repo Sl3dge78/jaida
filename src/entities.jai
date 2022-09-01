@@ -435,11 +435,19 @@ Door :: struct {
     using e: Entity;
     on_interact = try_open;
     e.flags = Entity.Flag.SOLID;
+    
+    tiles : [6]*Entity;
 
     try_open :: (e: *Entity, player: *Player) {
         if player.keys > 0 {
+            self := cast(*Door)e;
+            for t : self.tiles {
+                t.sprite.y += 3;
+            }
+
             e.flags |= .SHOULD_DELETE;
             player.keys -= 1;
+            context.game.main_quest_state = .DOOR_OPEN;
         } else {
             Dialog.open(no_key_dialog);
         }
@@ -463,6 +471,16 @@ Dialog_NPC :: struct {
     }
 }
 
-no_key_dialog := Dialog.Node.[
-    Dialog.Node.{lines = .["You need a key to open this door"], jumps = .[-1]}
-    ];
+Boss :: struct {
+    using #as e: Entity;
+    tag = .ENEMY;
+    hit_tag = .ENEMY;
+    damage := 1;
+
+    simulate :: (using boss: *Boss, delta_time: float) {
+        player := Game.get_player();
+        player_distance := Math.distance(player.position, position);
+
+
+    }
+}

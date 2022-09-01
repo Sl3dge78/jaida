@@ -1,4 +1,24 @@
+// Utils
 
+/// Create a single line dialog
+create_dialog :: (text : string) -> [..]Dialog.Node {
+    node : Dialog.Node = .{lines = .[""], jumps = .[-1]};
+    node.lines[0] = text;
+
+    result : [..]Dialog.Node;
+    Basic.array_add(*result, node);
+
+    return result;
+}
+
+dialog_push_line :: (dialog: *[..]Dialog.Node, text : string) {
+    node : Dialog.Node = .{lines = .[""], jumps = .[-1]};
+    node.lines[0] = text;
+    (<<dialog)[dialog.count - 1].jumps[0] = 1;
+    Basic.array_add(dialog, node);
+}
+
+// Example
 tree := Dialog.Node.[
     Dialog.Node.{lines = .["Hello, I'm a chest!","And this is a second line!", "How many lines can you fit here?"], jumps = .[1]},
     Dialog.Node.{has_title = true, lines = .["Chest", "Hey I have a title now!"], jumps = .[2] },
@@ -82,22 +102,8 @@ dialog_father_1 := Dialog.Node.[
 dialog_restaurant_1 := #run create_dialog("I love eating here.");
 dialog_restaurant_2 := #run create_dialog("Too bad they only serve noodles.");
 
-// Utils
 
-/// Create a single line dialog
-create_dialog :: (text : string) -> [..]Dialog.Node {
-    node : Dialog.Node = .{lines = .[""], jumps = .[-1]};
-    node.lines[0] = text;
+no_key_dialog := Dialog.Node.[
+    Dialog.Node.{lines = .["You need a key to open this door"], jumps = .[-1]}
+    ];
 
-    result : [..]Dialog.Node;
-    Basic.array_add(*result, node);
-
-    return result;
-}
-
-dialog_push_line :: (dialog: *[..]Dialog.Node, text : string) {
-    node : Dialog.Node = .{lines = .[""], jumps = .[-1]};
-    node.lines[0] = text;
-    (<<dialog)[dialog.count - 1].jumps[0] = 1;
-    Basic.array_add(dialog, node);
-}

@@ -2,53 +2,70 @@
 # In-Progress 
 
 # Inbox 
-
+- [ ] Projectile entity type ?
 
 ## System
-- [ ] Projectile entity type
 - [ ] HUD with health
 - [ ] Puzzles (push blocks?)
-- [ ] Enemy health?
 
 ## Content
-- [ ] Dungeon 
-    - [ ] Puzzles
+- [ ] Death screen
+    - [ ] Save checkpoint before map change and reload it
 - [ ] Main Quest
     - [X] Get your sword
-    - [ ] Training in the village?
-    - [ ] Go to the castle
-    - [ ] Find castle key
+    - [ ] Training in the village
+        - [ ] Spawn dummy
+        - [ ] On kill next quest step
+        - [ ] Dialog with dojo master: go talk to chief
+        - [ ] Dialog with chief, accept quest
+    - [X] Find castle key
+        - [X] Kill miniboss
+        - [X] Drops key
+        - [X] Doesn't respawn
+    - [X] Go to the castle
+        - [X] Open door
     - [ ] Kill boss in castle
+        - [ ] Dialog
+        - [ ] Boss fight
+            - [ ] Dash towards player move
+            - [ ] Whirldwind
+            - [ ] Dash corners
+        - [ ] End dialog: Go back to chief
+    - [ ] Final dialog
 - [ ] NPCs
     - [ ] Walks random
-    - [ ] Hits things (dojo)
+        - [ ] 1 - 2 in village
     - [ ] Doesn't move (chief & sensei)
+    - [ ] Hits things (dojo)
 - [ ] Level Design
-    - [ ] TOWN_SOUTH
+    - [X] TOWN_SOUTH
         - [ ] NPCs
     - [X] -1, 0
     - [ ] CHIEFS_HOUSE
-    - [ ] DOJO
-    - [ ] HOUSE_1
-    - [ ] RESTAURANT
-    - [ ] TOWN_NORTH
-    - [ ] 0, 1
-    - [ ] 1, 1
-    - ...
+    - [X] DOJO
+    - [X] HOUSE_1
+    - [X] RESTAURANT
+    - [X] TOWN_NORTH
+    - [X] 0, 1
+    - [ ] MINIBOSS
+    - [X] CASTLE_ENTRANCE
+    - [ ] DUNGEON
 - [ ] Enemy Variety
     - [X] Forest creatures
-    - [ ] Ranged human
+    - [ ] Ranged human?
     - [X] Patrol
 
 # To consider
+- [ ] Add shadows below entities
+- [ ] Dungeon 
+    - [ ] Puzzles
 - [ ] Make the key bob up & down
-- [ ] Make the characters bob up & down?
-- [ ] Save state: When we destroy the bushes, they come back
-- [ ] Quest tracker of sorts (not necessarily UI)
-- [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs.
+- [ ] Make the characters bob up & down? -> To try, could look better
+- [ ] Save state: When we destroy the bushes, they come back. -> Meh
+- [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs. -> Doesn't seem needed yet
 - [ ] Better audio system, using the callback. 
     - (Dialog) queue x blipblips
-- [ ] Have some components that update not every frame
+- [ ] Have some components that update not every frame -> Doesn't seem needed yet
 - [ ] (Collision) Allow definition of a custom collision box, for some map tiles.
 - [ ] Pathfinding ?
 
@@ -77,3 +94,5 @@
 - [X] Sort entities in y
 - [X] Make units blink when invincible
 - [X] Sword doesnt deal damage when we are very close to the bush
+- [X] Big door opening in DUNGEON
+- [X] Quest tracker of sorts (not necessarily UI)

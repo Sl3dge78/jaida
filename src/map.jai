@@ -14,6 +14,7 @@ CHIEFS_HOUSE :: Vector2i.{-2, 0};
 DOJO :: Vector2i.{-3, 0};
 HOUSE_1 :: Vector2i.{-4, 0};
 RESTAURANT :: Vector2i.{-5, 0};
+DUNGEON :: Vector2i.{2, 2};
 
 Map_Type :: [MAP_LAYERS][MAP_WIDTH*MAP_HEIGHT]u32;
 

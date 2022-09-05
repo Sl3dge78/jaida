@@ -14,6 +14,7 @@ Entity :: struct {
         SHOULD_DELETE;
         SOLID;
         ORIENT_HITBOX;
+        HIDDEN;
     };
     flags : Flag;
 
@@ -46,12 +47,12 @@ Entity :: struct {
     immunity: float;
 
     on_interact : (*Entity, *Player) = null;
-    on_death    : (*Entity) = null;
+    on_death    : (*Entity) = generic_death;
 
     IMMUNITY_TIME :: 1;
 
     draw :: (using e: *Entity) {
-        if !sprite_sheet then return;
+        if !sprite_sheet || (e.flags & .HIDDEN) then return;
         x0, y0 := Map.map_to_screen(context.game.camera_position, position - Vector2.{0.5, 0.5});
         x1, y1 := Map.map_to_screen(context.game.camera_position, position + Vector2.{0.5, 0.5});
         uv0, uv1 := get_uv_from_texture(sprite_sheet, sprite);
@@ -161,8 +162,12 @@ Entity :: struct {
         }
         if ett.health <= 0 { 
             if ett.on_death then ett.on_death(ett);
-            ett.flags |= .SHOULD_DELETE;
+            
         }
+    }
+
+    generic_death :: (ett: *Entity) {
+        ett.flags |= .SHOULD_DELETE;
     }
 
     interact :: (ett: *Entity, player: *Player) {
@@ -180,7 +185,6 @@ Entity :: struct {
                 color = .{10, 10, 10, 1};
             }
         }
-
     }
 
     intersects_entity :: (e1: *Entity, e2: *Entity) -> bool {
@@ -200,6 +204,8 @@ Player :: struct {
 
     keys : int;
     can_attack : bool;
+
+    on_death = player_death;
 
     simulate :: (using player : *Player, delta_time : float) { 
         update_immunity(xx player, delta_time);
@@ -256,6 +262,10 @@ Player :: struct {
             attack_time -= delta_time;
             if attack_time <= 0 then anim_state = .IDLE;
         }
+    }
+
+    player_death :: (e : *Entity) {
+        Game.switch_state(.DEATH);
     }
 }
 

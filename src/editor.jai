@@ -107,10 +107,11 @@ Editor :: struct {
 
             Simp.clear_scissor();
         }
-        player := Game.get_player();
-        status_line := Basic.tprint("% - % - %hp - % keys", player.position, player.world_pos, player.health, player.keys);
-
-        Simp.draw_text(small_font, 0, screen_height - 16, status_line);
+        if context.game.state == .GAME {
+            player := Game.get_player();
+            status_line := Basic.tprint("% - % - %hp - % keys", player.position, player.world_pos, player.health, player.keys);
+            Simp.draw_text(small_font, 0, screen_height - 16, status_line);
+        }
     }
 
     save_map :: (down : bool) {

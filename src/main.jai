@@ -90,9 +90,8 @@ main :: () {
 
     Game.load();
 
-    quit := false;
     last_time := Basic.get_time();
-    while !quit {
+    while !context.game.quit {
         now := Basic.get_time();
         delta_time : float = cast(float) (now - last_time);
         last_time = now;
@@ -101,7 +100,7 @@ main :: () {
         game_state.mouse_y = game_state.screen_height - game_state.mouse_y;
         Input.update_window_events();
         for Input.events_this_frame {
-            if it.type == .QUIT then quit = true;
+            if it.type == .QUIT then context.game.quit = true;
             keymap_handler(it);
         }
         for Input.get_window_resizes() {

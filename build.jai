@@ -3,8 +3,6 @@ Compiler :: #import "Compiler";
 
 #run build();
 
-// @TODO Make a bug report. Notes aren't specified in the typechecking of the structs.
-
 component_list : [..]*Compiler.Code_Struct;
 update_component_list : [..]*Compiler.Code_Struct;
 draw_component_list : [..]*Compiler.Code_Struct;

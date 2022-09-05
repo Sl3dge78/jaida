@@ -50,6 +50,9 @@ Game :: struct {
         GAME;
         EDITOR;
         DIALOG;
+        DEATH;
+        GAME_OVER;
+        MAIN_MENU;
     };
     
     Palette :: struct {
@@ -59,9 +62,11 @@ Game :: struct {
         DARK_ORANGE :: Vector4.{0.82, 0.294, 0.204, 1};
     };
 
-    state : State = .GAME;
+    state : State = .MAIN_MENU;
+    quit : bool = false;
     screen_width : s32;
     screen_height : s32;
+    starting_world_pos :: Vector2i.{-1, 0};
 
     audio_device : SDL_AudioDeviceID = ---;
     volume : s8 = 32;
@@ -71,6 +76,9 @@ Game :: struct {
 
     mouse_x : int;
     mouse_y : int;
+
+    respawn_position : Vector2 = .{15, 10};
+    respawn_map : Vector2i = starting_world_pos;
 
     current_map : Map;
     current_world_pos : Vector2i;
@@ -114,6 +122,19 @@ Game :: struct {
     // This is a timer that is reset every second
     second : float;
 
+    // Death
+    death_timer : float;
+    death_current_selection : enum {
+        CONTINUE;
+        QUIT;
+    } = .CONTINUE;
+
+    // Main menu
+    menu_current_selection : enum {
+        START;
+        QUIT;   
+    } = .START;
+
     load :: () {
         using context.game;
 
@@ -139,10 +160,9 @@ Game :: struct {
         load_texture_no_filter(*key_texture, "res/key.png");
 
         dialog_blip = Audio_Stream.load("res/audio/blip.wav");
-        starting_world_pos :: Vector2i.{-1, 0};
-        player := create_player(.{15, 10}, starting_world_pos);
-        player.can_attack = false;
-        request_map_change(current_map, starting_world_pos);
+        
+        player := create_player(context.game.respawn_position, context.game.respawn_map);
+        Game.switch_state(.MAIN_MENU);
     }
 
     update :: (delta_time : float32) {
@@ -152,6 +172,28 @@ Game :: struct {
         if game.second > 1.0 then game.second -= 1.0;
 
         if game.state == { 
+            case .MAIN_MENU; {
+                
+                if Input.input_button_states[#char "W"] & .START {
+                    if game.menu_current_selection > .START {
+                        game.menu_current_selection -= 1;
+                    }
+                }
+                if Input.input_button_states[#char "S"] & .START {
+                    if game.menu_current_selection < .QUIT {
+                        game.menu_current_selection += 1;
+                    }
+                }
+
+                if Input.input_button_states[#char "E"] & .START {
+                    if game.menu_current_selection == .START {
+                        Game.request_map_change(game.current_map, game.respawn_map);
+                        Game.switch_state(.GAME);
+                    } else {
+                        game.quit = true;
+                    }
+                }
+            }
             case .GAME;
                 for game.entities {
                     if it.tag == {
@@ -175,6 +217,32 @@ Game :: struct {
             case .DIALOG; {
                 Dialog.update(delta_time);
             }
+            case .DEATH; {
+                game.death_timer -= delta_time;
+                if game.death_timer <= 0 {
+                    Game.switch_state(.GAME_OVER);
+                }
+            }
+            case .GAME_OVER; {
+                if Input.input_button_states[#char "W"] & .START {
+                    if game.death_current_selection != .CONTINUE {
+                        game.death_current_selection -= 1;
+                    }
+                }
+                if Input.input_button_states[#char "S"] & .START {
+                    if game.death_current_selection < .QUIT {
+                        game.death_current_selection += 1;
+                    }
+                }
+
+                if Input.input_button_states[#char "E"] & .START {
+                    if game.death_current_selection == .CONTINUE {
+                        Game.switch_state(.GAME);
+                    } else {
+                        Game.switch_state(.MAIN_MENU);
+                    }
+                }
+            }
         }
 
         for game.entities {
@@ -187,6 +255,7 @@ Game :: struct {
 
     draw :: () {
         game := *context.game;
+         
         if game.state == .EDITOR {
             Simp.clear_render_target(0.5, 0, 0, 1);
         } else {
@@ -218,13 +287,47 @@ Game :: struct {
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(2);
 
+
+        // UI
         if game.state == .DIALOG {
             Dialog.draw();
         }
 
-        #if DEVELOPER {
-           Editor.draw();
+        if game.state == {
+            case .MAIN_MENU; {
+                Simp.set_shader_for_color(true);
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 0.2));
+
+                Simp.draw_text(game.font, 100, 650, "GENERIC ADVENTURE GAME", make_vector4(1, 0, 0, 1));
+                
+                Simp.draw_text(game.font, 80, ifx game.menu_current_selection == .START then 250 else 200, ">");
+                Simp.draw_text(game.font, 100, 250, "Start",
+                    ifx game.menu_current_selection == .START then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                Simp.draw_text(game.font, 100, 200, "Quit", 
+                    ifx game.menu_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+            }
+            case .DEATH; {
+                Simp.set_shader_for_color(true);
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 1.0 - (game.death_timer / 4.0)));
+            }
+            case .GAME_OVER; {
+                Simp.set_shader_for_color(true);
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 1));
+
+                Simp.draw_text(game.font, 100, 650, "YOU ARE DEAD", make_vector4(1, 0, 0, 1));
+
+                Simp.draw_text(game.font, 80, ifx game.death_current_selection == .CONTINUE then 250 else 200, ">");
+
+                Simp.draw_text(game.font, 100, 250, "Continue",
+                    ifx game.death_current_selection == .CONTINUE then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                Simp.draw_text(game.font, 100, 200, "Quit", 
+                    ifx game.death_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+            }
         }
+
+        #if DEVELOPER {
+            Editor.draw();
+        }        
     }
 
     request_map_change :: (current_map : Map, map_pos : Vector2i) -> bool {
@@ -232,15 +335,26 @@ Game :: struct {
         success := Map.load(current_map, map_pos);
         if !success return false;
         context.game.current_world_pos = map_pos;
+        player := Game.get_player();
+        if context.game.current_world_pos == player.world_pos {
+            player.flags &= ~.HIDDEN;
+        } else {
+            player.flags |= .HIDDEN;
+        }
 
         for context.game.entities {
-            if it.world_pos != map_pos {
+            if it.tag != .PLAYER {
                 it.flags |= .SHOULD_DELETE;
             }
         }
 
         load_entities(map_pos);
         return true;
+    }
+
+    set_spawn :: (map_pos : Vector2i, pos : Vector2) {
+        context.game.respawn_map = map_pos;
+        context.game.respawn_position = pos;
     }
 
     sort_entities :: (arr : [..]* Entity) {
@@ -388,6 +502,32 @@ Game :: struct {
         return e;
     }
 
+    switch_state :: (to: Game.State){
+        game := *context.game;
+        player := Game.get_player();
+        if to == {
+            case .GAME; {
+                Game.request_map_change(game.current_map, game.respawn_map);
+                player.position = game.respawn_position;
+                player.world_pos = game.respawn_map;
+                player.health = 4;
+                player.color = .{1, 1, 1, 1};
+                player.immunity = 0;
+            }
+            case .MAIN_MENU; {
+                Game.request_map_change(game.current_map, .{0, 0});
+            }
+            case .DEATH; {
+                game.death_timer = 4.0;
+                // @Todo: Player death sound & music
+            }
+            case .GAME_OVER; {
+
+            }
+        }
+        game.state = to;
+    }
+
     create_player :: (pos : Vector2, world_pos : Vector2i) -> *Player {
         player := new_entity(Player);
         player.sprite_sheet = *context.game.blue_samurai_texture;
@@ -522,6 +662,7 @@ Game :: struct {
             entity.world_pos.y += 1;
             entity.position.y = 0;
             if entity.tag == .PLAYER {
+                set_spawn(entity.world_pos, entity.position);
                 Game.request_map_change(context.game.current_map, entity.world_pos);
             }
         }
@@ -529,6 +670,7 @@ Game :: struct {
             entity.world_pos.y -= 1;
             entity.position.y = MAP_HEIGHT - 1;
             if entity.tag == .PLAYER {
+                set_spawn(entity.world_pos, entity.position);
                 Game.request_map_change(context.game.current_map, entity.world_pos);
             }
         }
@@ -537,6 +679,7 @@ Game :: struct {
             entity.world_pos.x += 1;
             entity.position.x = 0;
             if entity.tag == .PLAYER {
+                set_spawn(entity.world_pos, entity.position);
                 Game.request_map_change(context.game.current_map, entity.world_pos);
             }
         }
@@ -544,6 +687,7 @@ Game :: struct {
             entity.world_pos.x -= 1;
             entity.position.x = MAP_WIDTH - 1;
             if entity.tag == .PLAYER {
+                set_spawn(entity.world_pos, entity.position);
                 Game.request_map_change(context.game.current_map, entity.world_pos);
             }
         }

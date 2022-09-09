@@ -5,12 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "gdb",
+            "type": "lldb",
             "request": "launch",
             "name": "Launch Program",
-            "target": "${workspaceRoot}/bin/build",
+            "program": "${workspaceRoot}/bin/build",
             "cwd": "${workspaceRoot}/bin",
-            "valuesFormatting": "parseText"
         },
     ]
 }

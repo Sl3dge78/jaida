@@ -9,8 +9,9 @@
 - [ ] Puzzles (push blocks?)
 
 ## Content
-- [ ] Death screen
-    - [ ] Save checkpoint before map change and reload it
+- [X] Death screen
+    - [X] Save checkpoint before map change and reload it
+- [X] Pause
 - [ ] Main Quest
     - [X] Get your sword
     - [ ] Training in the village

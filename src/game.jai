@@ -48,6 +48,7 @@ load_texture_no_filter :: (tex : *Simp.Texture, path : string) -> bool {
 Game :: struct {
     State :: enum {
         GAME;
+        PAUSE;
         EDITOR;
         DIALOG;
         DEATH;
@@ -173,7 +174,6 @@ Game :: struct {
 
         if game.state == { 
             case .MAIN_MENU; {
-                
                 if Input.input_button_states[#char "W"] & .START {
                     if game.menu_current_selection > .START {
                         game.menu_current_selection -= 1;
@@ -194,7 +194,10 @@ Game :: struct {
                     }
                 }
             }
-            case .GAME;
+            case .GAME; {
+                if Input.input_button_states[Input.Key_Code.ESCAPE] & .START {
+                    Game.switch_state(.PAUSE);
+                }
                 for game.entities {
                     if it.tag == {
                         case .PLAYER;
@@ -209,6 +212,31 @@ Game :: struct {
                             Pickup.simulate(xx it, delta_time);
                     }
                 }
+            }
+            case .PAUSE; {
+                if Input.input_button_states[Input.Key_Code.ESCAPE] & .START {
+                    Game.switch_state(.GAME);
+                }
+
+                if Input.input_button_states[#char "W"] & .START {
+                    if game.menu_current_selection > .START {
+                        game.menu_current_selection -= 1;
+                    }
+                }
+                if Input.input_button_states[#char "S"] & .START {
+                    if game.menu_current_selection < .QUIT {
+                        game.menu_current_selection += 1;
+                    }
+                }
+
+                if Input.input_button_states[#char "E"] & .START {
+                    if game.menu_current_selection == .START {
+                        Game.switch_state(.GAME);
+                    } else {
+                        game.quit = true;
+                    }
+                }
+            }   
             case .EDITOR; {
                 #if DEVELOPER {
                     Editor.update();
@@ -302,6 +330,18 @@ Game :: struct {
                 
                 Simp.draw_text(game.font, 80, ifx game.menu_current_selection == .START then 250 else 200, ">");
                 Simp.draw_text(game.font, 100, 250, "Start",
+                    ifx game.menu_current_selection == .START then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                Simp.draw_text(game.font, 100, 200, "Quit", 
+                    ifx game.menu_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+            }
+            case .PAUSE; {
+                Simp.set_shader_for_color(true);
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 0.2));
+
+                Simp.draw_text(game.font, 100, 650, "GENERIC ADVENTURE GAME", make_vector4(1, 0, 0, 1));
+                
+                Simp.draw_text(game.font, 80, ifx game.menu_current_selection == .START then 250 else 200, ">");
+                Simp.draw_text(game.font, 100, 250, "Resume",
                     ifx game.menu_current_selection == .START then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
                 Simp.draw_text(game.font, 100, 200, "Quit", 
                     ifx game.menu_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
@@ -507,13 +547,14 @@ Game :: struct {
         player := Game.get_player();
         if to == {
             case .GAME; {
-                Game.request_map_change(game.current_map, game.respawn_map);
-                player.position = game.respawn_position;
-                player.world_pos = game.respawn_map;
-                player.health = 4;
-                player.color = .{1, 1, 1, 1};
-                player.immunity = 0;
-            }
+                if game.state != .PAUSE {
+                    Game.request_map_change(game.current_map, game.respawn_map);
+                    player.position = game.respawn_position;
+                    player.world_pos = game.respawn_map;
+                    player.health = 4;
+                    player.color = .{1, 1, 1, 1};
+                    player.immunity = 0;
+                }             }
             case .MAIN_MENU; {
                 Game.request_map_change(game.current_map, .{0, 0});
             }

@@ -11,7 +11,10 @@
 ## Content
 - [X] Death screen
     - [X] Save checkpoint before map change and reload it
+- [X] Main menu
+    - [ ] Blur background?
 - [X] Pause
+    - [ ] Blur background?
 - [ ] Main Quest
     - [X] Get your sword
     - [ ] Training in the village
@@ -57,7 +60,7 @@
     - [X] Patrol
 
 # To consider
-- [ ] Add shadows below entities
+- [X] Add shadows below entities
 - [ ] Dungeon 
     - [ ] Puzzles
 - [ ] Make the key bob up & down

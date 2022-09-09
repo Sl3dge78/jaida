@@ -10,6 +10,11 @@
             "name": "Launch Program",
             "program": "${workspaceRoot}/bin/build",
             "cwd": "${workspaceRoot}/bin",
+            "presentation": {
+                "hidden": false,
+                "group": "Build",
+                "order": 1
+            }
         },
     ]
 }

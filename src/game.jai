@@ -87,6 +87,7 @@ Game :: struct {
     
     camera_position : Vector2 = .{0.5, 0.75};
 
+    shadow_texture       : Simp.Texture;
     blue_samurai_texture : Simp.Texture;
     red_samurai_texture  : Simp.Texture;
     old_woman_texture    : Simp.Texture;
@@ -150,6 +151,7 @@ Game :: struct {
         load_texture_no_filter(*dialogbox_notitle_texture, "res/ui/dialogbox_notitle.png");
         load_texture_no_filter(*dialogbox_choice_texture, "res/ui/dialogbox_choice.png");
 
+        load_texture_no_filter(*shadow_texture, "res/shadow.png");
         load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
         load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
 
@@ -336,7 +338,7 @@ Game :: struct {
             }
             case .PAUSE; {
                 Simp.set_shader_for_color(true);
-                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 0.2));
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(1, 1, 1, 0.5));
 
                 Simp.draw_text(game.font, 100, 650, "GENERIC ADVENTURE GAME", make_vector4(1, 0, 0, 1));
                 
@@ -420,6 +422,7 @@ Game :: struct {
             create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             sensei := create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture);
+            sensei.on_interact = sensei_on_interact;
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
@@ -451,6 +454,7 @@ Game :: struct {
 
             chest := new_entity(Entity);
             chest.flags |= .SOLID;
+            chest.flags |= .NO_SHADOW;
             chest.sprite_sheet = *context.game.map_texture;
             chest.position = .{21, 15};
             if (context.game.main_quest_state < .SWORD_OK) {
@@ -488,12 +492,14 @@ Game :: struct {
                 miniboss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);
                 miniboss.on_death = (e : *Entity) {
                     Game.create_key(e.position);
+                    Entity.generic_death(e);
                 };
             }
         } else if map_pos == CASTLE_ENTRANCE {
             create_teleporter(.{33, 14}, .{19, 6.5}, DUNGEON); 
             create_door_part :: (tile_id : u32, pos : Vector2) -> *Entity {
                 e := new_entity(Entity);
+                e.flags |= .NO_SHADOW;
                 e.position = pos;
                 e.sprite_sheet = *context.game.map_texture;
                 x, y := tile_id_to_xy(*context.game.map_texture, tile_id);
@@ -606,6 +612,7 @@ Game :: struct {
 
     create_teleporter :: (pos : Vector2, new_pos : Vector2, new_world_pos : Vector2i) -> *Teleporter {
         tp := new_entity(Teleporter);
+        tp.flags |= .NO_SHADOW;
         tp.position = pos;
         tp.world_pos = context.game.current_world_pos;
         tp.new_pos = new_pos;
@@ -617,6 +624,7 @@ Game :: struct {
         e := new_entity(Entity);
         e.position = pos;
         e.flags |= .SOLID;
+        
         e.world_pos = context.game.current_world_pos;
         e.sprite_sheet = *context.game.map_texture;
         x, y := tile_id_to_xy(*context.game.map_texture, 1895);
@@ -637,6 +645,7 @@ Game :: struct {
 
     create_door :: (pos: Vector2) -> *Door{
         e := new_entity(Door);
+        e.flags |= .NO_SHADOW;
         e.position = pos;
         e.world_pos = context.game.current_world_pos;
         return e;
@@ -644,6 +653,7 @@ Game :: struct {
 
     create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture) -> *Entity{
         e := new_entity(NPC);
+        e.flags |= .SOLID;
         e.position = pos;
         e.direction = direction;
         e.sprite_sheet = texture;

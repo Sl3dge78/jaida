@@ -106,8 +106,10 @@ Game :: struct {
     current_dialog_tree : []Dialog.Node;
     current_dialog_node : u8; // I don't think we'll ever get a dialog tree bigger than 255...
     current_choice : s8;
-    char_timer : float;
-    dialog_nb_chars: int;
+
+    current_line : int; // The line we're in the process of drawing
+    current_char : int; // The character we last drew
+    char_timer : float; // Time until the next character gets drawn
     dialog_blip : Audio_Stream;
 
     // Quest

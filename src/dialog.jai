@@ -2,16 +2,15 @@
 
 Dialog :: struct {
 
+    Choice :: struct {
+        reply: string;
+        jump: s8;
+    };
+
     Node :: struct {
-        has_title : bool;
-
-        // if title : 1st line is the title
-        // if choices > 1 : last lines = choices
-        lines : []string; 
-        
-        // choices
-        jumps : []s8;
-
+        title : string;
+        text : []string; 
+        choices : []Choice = .[.{"", -1}];
     };
 
     CHARS_PER_SECOND :: 100;
@@ -24,7 +23,7 @@ Dialog :: struct {
             case #char "?"; return 1.0/5;
             case #char ","; return 1.0/10;
 
-            case #char " "; return 1.0/20;
+            case #char " "; return 1.0/50;
             case; return 1.0/100;
         }
     }
@@ -33,67 +32,55 @@ Dialog :: struct {
         using context.game;
 
         current : *Node = *current_dialog_tree[current_dialog_node];
-
-        if char_timer > 0 {
-            char_timer -= delta_time;  
-        } else if char_timer > -1 {
-            first_line, last_line := get_first_and_last_line(current);
-
-            nb_chars : int;
-            current_char : u8;
-            for i : first_line..last_line - 1 {
-                line := current.lines[i];
-                position_in_line := context.game.dialog_nb_chars - nb_chars;
-                if position_in_line <= line.count - 1 {
-                    current_char = line[position_in_line];
-                    char_timer += get_char_timer(current_char);
-                    dialog_nb_chars += 1;
-                    if Basic.is_alpha(current_char) {
-                        Audio_Stream.mix_and_play_immediate(*dialog_blip, volume, audio_device);
-                    }
-                    if char_timer > 0 then break;
-                } else {
-                    nb_chars += line.count;
+        
+        if current_line < current.text.count { // We're in the process of drawing lines
+            if char_timer > 0 {
+                char_timer -= delta_time;  
+            } else {
+                line := current.text[current_line];                  
+                
+                char_timer += get_char_timer(line[current_char]);
+                if Basic.is_alpha(line[current_char]) {
+                    Audio_Stream.mix_and_play_immediate(*dialog_blip, volume, audio_device);
                 }
-            }
-            if current_char == 0 { 
-                char_timer = -1;
+                current_char += 1;
+                if current_char >= line.count { // We finished the line
+                    current_char = 0;
+                    current_line += 1;
+                }
             }
         }
 
 
         if Input.input_button_states[#char "E"] & .START {
-            if current.jumps.count == 0 || (current.jumps.count > 0 && current.jumps[current_choice] == -1) {
-                context.game.state = .GAME; // End the dialog
+            if current_line < current.text.count { // We haven't finished drawing the full dialog. Finish it now
+                current_line = current.text.count;
+                current_char = 0;
+            } else { // Go to the next dialog/end
+                if current.choices.count == 0 || (current.choices.count > 0 && current.choices[current_choice].jump == -1) {
+                    context.game.state = .GAME; // End the dialog
+                    
+                } else {
+                    current_dialog_node = xx current.choices[current_choice].jump;
+                }
                 current_choice = 0;
-                dialog_nb_chars = 0;
-                char_timer = -1;
-            } else {
-                current_dialog_node = xx current.jumps[current_choice];
-                current_choice = 0;
-                dialog_nb_chars = 0;
+                current_line = 0;
                 char_timer = 0;
             }
         }
         if Input.input_button_states[#char "A"] & .START { 
             current_choice -= 1;
-            if current_choice < 0 then current_choice = xx (current.jumps.count - 1);
+            if current_choice < 0 then current_choice = xx (current.choices.count - 1);
         }
 
         if Input.input_button_states[#char "D"] & .START { 
             current_choice += 1;
-            if current_choice >= current.jumps.count then current_choice = 0;
+            if current_choice >= current.choices.count then current_choice = 0;
         }
 
         if Input.input_button_states[#char "G"] & .START {
             
         }
-    }
-
-    get_first_and_last_line :: (node: *Node) -> int, int {
-        first_line := ifx node.has_title then 1 else 0;
-        last_line := node.lines.count - (ifx node.jumps.count == 1 then 0 else node.jumps.count);
-        return first_line, last_line;
     }
 
     draw :: () {
@@ -103,7 +90,7 @@ Dialog :: struct {
         shadow_distance :: ZOOM * 2;
 
         
-        if !current_node.has_title {
+        if current_node.title.count == 0 {
             bg = *context.game.dialogbox_notitle_texture;
         } else {
             bg = *context.game.dialogbox_texture;
@@ -121,43 +108,39 @@ Dialog :: struct {
         margin_x := 16; // @Hardcoded
 
         // Title
-        if current_node.has_title {
+        if current_node.title.count > 0 {
             title_x0 := x0 + margin_x;
             title_y0 := y0 + h - (20); // @Hardcoded
-            Simp.draw_text(font, xx title_x0, xx title_y0, current_node.lines[0], .{1,1,1,1});
+            Simp.draw_text(font, xx title_x0, xx title_y0, current_node.title, .{1,1,1,1});
         }
-
-        first_line, last_line := get_first_and_last_line(current_node);
 
         // Main dialog box
         y_space := 2;   // @Hardcoded
         line_height := font.character_height + y_space;
         text_x0 := x0 + margin_x;
-        text_y0 := y0 + (5 * line_height) - y_space;
+        text_y0 := y0 + (4 * line_height) - y_space;
+        if current_node.title.count == 0 then text_y0 += line_height;
 
-        // We'll stop drawing once we have reached this number
-        char_left := context.game.dialog_nb_chars;
-        for i : first_line..last_line - 1 {
-            line := current_node.lines[i];
-            if line.count > char_left {
-                line.count = char_left;
-                char_left = 0;
+        for current_node.text {
+            if context.game.current_line > it_index {
+                Simp.draw_text(font, xx text_x0, xx text_y0 - line_height * it_index, it, .{0,0,0,1});
+                continue;
             } else {
-                char_left -= line.count;
+                current := it;
+                current.count = context.game.current_char;
+                Simp.draw_text(font, xx text_x0, xx text_y0 - line_height * it_index, current, .{0,0,0,1});                
+                break;
             }
-            Simp.draw_text(font, xx text_x0, xx text_y0 - line_height * i, line, .{0,0,0,1});
-
-            if char_left == 0 break;
         }
         
         // Choice box
-        if current_node.jumps.count > 1 {
+        if current_node.choices.count > 1 {
             choice_w := context.game.dialogbox_choice_texture.width * ZOOM;
             choice_h := context.game.dialogbox_choice_texture.height * ZOOM;
             choice_padding := choice_w + 8;
-            choice_x0 := (x0 + w) - (current_node.jumps.count * choice_padding) - 8;
+            choice_x0 := (x0 + w) - (current_node.choices.count * choice_padding) - 8;
             choice_y0 := y0 + 8;
-            for current_node.jumps {
+            for current_node.choices {
                 Simp.set_shader_for_images(*context.game.dialogbox_choice_texture);
                 x := choice_x0 + it_index * choice_padding;
                 // Shadow
@@ -173,7 +156,7 @@ Dialog :: struct {
                         color = lerp(Game.Palette.DARK_ORANGE, Game.Palette.BLACK, context.game.second);
                     }
                 }
-                Simp.draw_text(font, xx (x + 6 * ZOOM), xx (choice_y0 + 7 * ZOOM), current_node.lines[it_index + last_line], color);
+                Simp.draw_text(font, xx (x + 6 * ZOOM), xx (choice_y0 + 7 * ZOOM), it.reply, color);
             }
         }
     }
@@ -183,7 +166,8 @@ Dialog :: struct {
         context.game.state = .DIALOG;
         context.game.current_dialog_tree = tree;
         context.game.current_dialog_node = first;
-        context.game.dialog_nb_chars = 0;
+        context.game.current_char = 0;
+        context.game.current_line = 0;
         context.game.char_timer = 0;
     }
 }

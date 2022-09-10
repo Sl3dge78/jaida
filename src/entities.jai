@@ -177,7 +177,6 @@ Entity :: struct {
         }
         if ett.health <= 0 { 
             if ett.on_death then ett.on_death(ett);
-            
         }
     }
 
@@ -311,6 +310,7 @@ Enemy :: struct {
     damage := 1;
 
     Type :: enum {
+        STATIC;
         HUMANOID;
         FOLLOW;
     }
@@ -336,55 +336,56 @@ Enemy :: struct {
     simulate :: (using enemy: *Enemy, delta_time: float) {
         update_immunity(xx enemy, delta_time);
 
-        player := Game.get_player();
-        distance := Math.distance(player.position, position);
+        if enemy.type != .STATIC {
+            player := Game.get_player();
+            distance := Math.distance(player.position, position);
 
-        if distance > xx deaggro_dist || player.world_pos != world_pos {
-            combat_phase = .NOT_AGGROED;
-            // npc_move.state = .IDLE;
-        }
-
-        if #complete combat_phase == {
-            case .NOT_AGGROED; {
-                if patrol.points.count > 0 {
-                    Patrol_Behavior.do_the_patrol(*e, *patrol, delta_time);
-                }
-                // NPC_Move.update(*npc_move, delta_time);
-                if distance < xx aggro_dist then {
-                    combat_phase = .APPROACHING;
-                }
+            if distance > xx deaggro_dist || player.world_pos != world_pos {
+                combat_phase = .NOT_AGGROED;
+                // npc_move.state = .IDLE;
             }
-            case .APPROACHING; {
-                if distance < 1 {
-                    if type == .HUMANOID {
-                        combat_phase = .WINDUP;
-                        state = .WINDUP;
-                        combat_timer = WINDUP_TIME;
-                    } else {
-                        Entity.deal_damage(xx player, damage);
+
+            if #complete combat_phase == {
+                case .NOT_AGGROED; {
+                    if patrol.points.count > 0 {
+                        Patrol_Behavior.do_the_patrol(*e, *patrol, delta_time);
                     }
-                } else {
-                    Entity.move_towards(*e, player.position, 3, delta_time);
+                    // NPC_Move.update(*npc_move, delta_time);
+                    if distance < xx aggro_dist then {
+                        combat_phase = .APPROACHING;
+                    }
+                }
+                case .APPROACHING; {
+                    if distance < 1 {
+                        if type == .HUMANOID {
+                            combat_phase = .WINDUP;
+                            state = .WINDUP;
+                            combat_timer = WINDUP_TIME;
+                        } else {
+                            Entity.deal_damage(xx player, damage);
+                        }
+                    } else {
+                        Entity.move_towards(*e, player.position, 3, delta_time);
+                    }
+                }
+                case .WINDUP; {
+                    combat_timer -= delta_time;
+                    if combat_timer < 0 {
+                        combat_phase = .ATTACK;
+                        state = .ATTACKING;
+                        combat_timer = ATTACK_TIME;
+                        Game.create_weapon(e, .PLAYER, ATTACK_TIME);
+                    }
+                }
+                case .ATTACK; {
+                    combat_timer -= delta_time;
+                    if combat_timer <= 0 then combat_phase = .APPROACHING;
                 }
             }
-            case .WINDUP; {
-                combat_timer -= delta_time;
-                if combat_timer < 0 {
-                    combat_phase = .ATTACK;
-                    state = .ATTACKING;
-                    combat_timer = ATTACK_TIME;
-                    Game.create_weapon(e, .PLAYER, ATTACK_TIME);
-                }
-            }
-            case .ATTACK; {
-                combat_timer -= delta_time;
-                if combat_timer <= 0 then combat_phase = .APPROACHING;
-            }
+
+            sprite = Entity.get_sprite(state, anim_time, direction);
         }
-
-        sprite = Entity.get_sprite(state, anim_time, direction);
     }
-
 }
 
 Teleporter :: struct {
@@ -416,7 +417,7 @@ Teleporter :: struct {
 Damage_Area :: struct {
     using e: Entity;
     tag = .WEAPON;
-    flags = .ORIENT_HITBOX;
+    flags = Entity.Flag.ORIENT_HITBOX | .NO_SHADOW;
 
     look_for: Entity.Tag = .NONE; // What kind of hitboxes to search. Used to give
     time_left: float;

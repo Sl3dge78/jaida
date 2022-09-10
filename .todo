@@ -60,7 +60,7 @@
     - [X] Patrol
 
 # To consider
-- [X] Add shadows below entities
+
 - [ ] Dungeon 
     - [ ] Puzzles
 - [ ] Make the key bob up & down
@@ -74,6 +74,7 @@
 - [ ] Pathfinding ?
 
 # Done
+- [X] Add shadows below entities
 - [X] (Collision) Detect them with NPCs
 - [X] Destructible element
 - [X] Entities stay alive for 1 frame when changing map. Maybe do the map change at the end of the frame to prevent that?

@@ -423,6 +423,19 @@ Game :: struct {
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             sensei := create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture);
             sensei.on_interact = sensei_on_interact;
+
+            dummy := cast(*Enemy)new_entity(Enemy);
+            dummy.flags |= .SOLID;
+            dummy.tag = .ENEMY;
+            dummy.type = .STATIC;
+            dummy.hit_tag = .ENEMY;
+            dummy.health = 2;
+            dummy.position = .{15, 12};
+            dummy.sprite_sheet = *context.game.map_texture;
+            dummy.on_death = dummy_death;
+            x, y := tile_id_to_xy(*context.game.map_texture, 2622);
+            dummy.sprite.x = xx x;
+            dummy.sprite.y = xx y;
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);

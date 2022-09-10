@@ -17,25 +17,25 @@
     - [ ] Blur background?
 - [ ] Main Quest
     - [X] Get your sword
-    - [ ] Training in the village
-        - [ ] Spawn dummy
-        - [ ] On kill next quest step
-        - [ ] Dialog with dojo master: go talk to chief
-        - [ ] Dialog with chief, accept quest
+    - [X] Training in the village
+        - [X] Spawn dummy
+        - [X] On kill next quest step
+        - [X] Dialog with dojo master: go talk to chief
+        - [X] Dialog with chief, accept quest
     - [X] Find castle key
         - [X] Kill miniboss
         - [X] Drops key
         - [X] Doesn't respawn
     - [X] Go to the castle
         - [X] Open door
-    - [ ] Kill boss in castle
+    - [X] Kill boss in castle
         - [ ] Dialog
         - [ ] Boss fight
             - [ ] Dash towards player move
             - [ ] Whirldwind
             - [ ] Dash corners
-        - [ ] End dialog: Go back to chief
-    - [ ] Final dialog
+        - [X] End dialog: Go back to chief
+    - [X] Final dialog
 - [ ] NPCs
     - [ ] Walks random
         - [ ] 1 - 2 in village

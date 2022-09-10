@@ -55,14 +55,6 @@ Entity :: struct {
     draw :: (using e: *Entity) {
         if !sprite_sheet || (e.flags & .HIDDEN) then return;
         
-        if !(e.flags & .NO_SHADOW) {
-            Simp.set_shader_for_images(*context.game.shadow_texture);
-            offset :: (1.0/16.0) * 2;
-            s_x0, s_y0 := Map.map_to_screen(context.game.camera_position, position - Vector2.{0.5, (0.5 + offset)});
-            s_x1, s_y1 := Map.map_to_screen(context.game.camera_position, position + Vector2.{0.5, (0.5 - offset)});
-            Simp.immediate_quad(cast(float)s_x0, cast(float)s_y0, cast(float)s_x1, cast(float)s_y1, make_vector4(1, 1, 1, 0.8));
-        }
-
         x0, y0 := Map.map_to_screen(context.game.camera_position, position - Vector2.{0.5, 0.5});
         x1, y1 := Map.map_to_screen(context.game.camera_position, position + Vector2.{0.5, 0.5});
         
@@ -73,9 +65,7 @@ Entity :: struct {
             p1 = make_vector2(xx x1, xx y0),
             p2 = make_vector2(xx x1, xx y1),
             p3 = make_vector2(xx x0, xx y1), color = color, 
-            uv0 = uv0, uv1 = make_vector2(uv1.x, uv0.y), uv2 = uv1, uv3 = make_vector2(uv0.x, uv1.y));
-
-        
+            uv0 = uv0, uv1 = make_vector2(uv1.x, uv0.y), uv2 = uv1, uv3 = make_vector2(uv0.x, uv1.y));   
 
         #if DEVELOPER {
             if e.tag == .WEAPON || e.tag == .ENEMY {
@@ -90,8 +80,17 @@ Entity :: struct {
                     p3 = make_vector2(xx x0, xx y1), color = .{1, .5, .5, .5});
             }
         }
+    }
 
-
+    draw_shadow :: (e: *Entity) {
+        if !e.sprite_sheet || (e.flags & .HIDDEN) then return;
+        if !(e.flags & .NO_SHADOW) {
+        Simp.set_shader_for_images(*context.game.shadow_texture);
+        offset :: (1.0/16.0) * 2;
+        s_x0, s_y0 := Map.map_to_screen(context.game.camera_position, e.position - Vector2.{0.5, (0.5 + offset)});
+        s_x1, s_y1 := Map.map_to_screen(context.game.camera_position, e.position + Vector2.{0.5, (0.5 - offset)});
+        Simp.immediate_quad(cast(float)s_x0, cast(float)s_y0, cast(float)s_x1, cast(float)s_y1, make_vector4(1, 1, 1, 0.8));
+    }
     }
 
     orient_hitbox :: (using e: Entity) -> Vector2, Vector2{
@@ -507,7 +506,5 @@ Boss :: struct {
     simulate :: (using boss: *Boss, delta_time: float) {
         player := Game.get_player();
         player_distance := Math.distance(player.position, position);
-
-
     }
 }

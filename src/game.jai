@@ -286,16 +286,6 @@ Game :: struct {
     }
 
     draw :: () {
-        game := *context.game;
-         
-        if game.state == .EDITOR {
-            Simp.clear_render_target(0.5, 0, 0, 1);
-        } else {
-            Simp.clear_render_target(0, 0, 0, 1);
-        }
-
-        Map.draw_layer(0, game.current_map, *game.map_texture, game.camera_position);
-
         layer_separator :: (layer : int) {
             #if DEVELOPER {
                 if context.game.state == .EDITOR && context.editor.current_layer > layer {
@@ -305,12 +295,26 @@ Game :: struct {
             }
         }
 
-        layer_separator(0);
-        Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
-        layer_separator(1);
+        game := *context.game;
 
         // Sort entities in y
         sort_entities(game.entities);
+
+        if game.state == .EDITOR {
+            Simp.clear_render_target(0.5, 0, 0, 1);
+        } else {
+            Simp.clear_render_target(0, 0, 0, 1);
+        }
+
+        Map.draw_layer(0, game.current_map, *game.map_texture, game.camera_position);
+        layer_separator(0);
+
+        for game.entities {
+            Entity.draw_shadow(it);
+        }
+
+        Map.draw_layer(1, game.current_map, *game.map_texture, game.camera_position);
+        layer_separator(1);
 
         for game.entities {
             Entity.draw(it);
@@ -318,7 +322,6 @@ Game :: struct {
 
         Map.draw_layer(2, game.current_map, *game.map_texture, game.camera_position);
         layer_separator(2);
-
 
         // UI
         if game.state == .DIALOG {
@@ -419,7 +422,17 @@ Game :: struct {
         if map_pos == HOME { // Interior
             create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
             create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
-            create_dialog_npc(.{21, 12}, Direction.SOUTH, *context.game.old_woman_texture, dialog_father_1);
+            if context.game.main_quest_state == { 
+                case .START; {
+                    create_dialog_npc(.{21, 12}, Direction.SOUTH, *context.game.old_woman_texture, dialog_father_1);
+                }
+                case .BOSS_KILLED; {
+                    create_dialog_npc(.{21, 12}, Direction.SOUTH, *context.game.old_woman_texture, dialog_father_end);
+                }
+                case; {
+                    create_dialog_npc(.{21, 12}, Direction.SOUTH, *context.game.old_woman_texture, dialog_father_good_luck);
+                }
+            }
         } else if map_pos == DOJO { 
             create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
@@ -539,12 +552,33 @@ Game :: struct {
                 create_door_part(3577, .{28, 5});
                 create_door_part(3578, .{29, 5});
             }
-            
-            // TODO : Set sprite
         } else if map_pos == DUNGEON {
             create_teleporter(.{18, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
             create_teleporter(.{19, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
             create_teleporter(.{20, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
+
+            reset_boss :: (enemy: *Enemy) {
+                enemy.hit_tag = .NONE;
+                enemy.type = .STATIC;
+                enemy.immunity = 0;
+                enemy.anim_state = .IDLE;
+                enemy.sprite = Entity.get_sprite(.IDLE, 0, .SOUTH);
+                enemy.on_interact = (e : *Entity, player: *Player) {
+                    Dialog.open(boss_dialog_repeat);
+                };
+            }
+
+            boss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);           
+            boss.on_death = (e : *Entity) {
+                Dialog.open(boss_dialog_after_fight);
+                context.game.main_quest_state = .BOSS_KILLED;
+                reset_boss(xx e);
+            };
+            if context.game.main_quest_state == .BOSS_KILLED {
+                reset_boss(boss);
+            } else {
+                Dialog.open(boss_dialog_before_fight);
+            }
         }
     }
 

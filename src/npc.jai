@@ -3,10 +3,13 @@ chief_on_interact :: (self: *Entity, player: *Player) {
     if context.game.main_quest_state == {
         case .START; dialog = dialog_chief_1;
         case .TRAINING_OK; { 
-            dialog = dialog_chief_2;
+            dialog = dialog_chief_start_quest;
             context.game.main_quest_state = .QUEST_ACCEPTED;
         }
-        case; dialog = dialog_chief_3;
+        case .BOSS_KILLED; {
+            dialog = dialog_chief_end;
+        }
+        case; dialog = dialog_chief_good_luck;
     }
     Dialog.open(dialog);
 }
@@ -18,7 +21,7 @@ sensei_on_interact :: (self: *Entity, player: *Player) {
         case .SWORD_OK; dialog = dialog_dojo_master_2;
         case .TRAINING_OK; dialog = dialog_dojo_master_3;
         case .BOSS_KILLED;  dialog = dialog_dojo_master_complete;
-        case; dialog = dialog_dojo_master_4;
+        case; dialog = dialog_dojo_master_good_luck;
     }
     Dialog.open(dialog);
 }

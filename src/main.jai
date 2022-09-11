@@ -21,12 +21,11 @@ round :: (x : float32) -> float32 {
 #placeholder DEVELOPER;
 
 #load "game.jai";
-#if 0 {
-    #load "ecs.jai";
-    #load "components.jai";
-} else {
-    #load "entities.jai";
-}
+
+#load "entities/entities.jai";
+#load "entities/player.jai";
+#load "entities/boss.jai";
+
 #load "keymaps.jai";
 #load "sprite.jai";
 #load "map.jai";

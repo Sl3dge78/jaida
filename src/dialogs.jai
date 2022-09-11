@@ -69,20 +69,20 @@ dialog_dojo_master_complete := Dialog.Node.[
 
 // Chief
 dialog_chief_1 := Dialog.Node.[
-    .{title = "Chief", text = .["Hello there.", "Are you ready for training?"], choices = .[.{"", 1}]},
+    .{title = "Chief", text = .["Hello there.", "Have you done your daily training?"], choices = .[.{"", 1}]},
     .{title = "Chief", text = .["The dojo master seemed pretty mad", "at the meeting this morning."], choices = .[.{"", -1}]},
 ];
 
 dialog_chief_start_quest := Dialog.Node.[
     .{title = "Chief", text = .["You've done your training?"], choices = .[.{"", 1}]},
     .{title = "Chief", text = .["Good."], choices = .[.{"", 2}]},
-    .{title = "Chief", text = .["Listen. all of us at the village,", "we've lost trust in you."], choices = .[.{"", 3}]},
+    .{title = "Chief", text = .["Listen. All of us at the village,", "we've lost trust in you."], choices = .[.{"", 3}]},
     .{title = "Chief", text = .["You're always late, always partying", "with your friends..."], choices = .[.{"", 4}]},
     .{title = "Chief", text = .["We're really worried that you", "don't have what it takes."], choices = .[.{"", 5}]},
     .{title = "Chief", text = .["So we've setup a test for you."], choices = .[.{"", 6}]},
     .{title = "Chief", text = .["Go to the dungeon to the north-east,", "and kill the boss."], choices = .[.{"", 7}]},
     .{title = "Chief", text = .["If you can do this, it'll prove to", "everyone that you can still", "be useful."], choices = .[.{"", 8}]},
-    .{title = "Chief", text = .["And I hope that in the process", "you'll understand how fun", "it can be."], choices = .[.{"", -1}]},
+    .{title = "Chief", text = .["And I hope that in the process", "you'll understand how fun it can be."], choices = .[.{"", -1}]},
 ];
 
 dialog_chief_good_luck := Dialog.Node.[
@@ -106,7 +106,8 @@ dialog_father_1 := Dialog.Node.[
 ]; 
 
 dialog_father_good_luck := Dialog.Node.[
-    .{title = "Father", text = .["Good luck."], choices = .[.{"", -1}]},
+    .{title = "Father", text = .["Let me heal you."], choices = .[.{"", 1}]}, 
+    .{title = "Father", text = .["Good luck on your quest."], choices = .[.{"", -1}]},
 ]; 
 
 dialog_father_end := Dialog.Node.[
@@ -136,6 +137,6 @@ boss_dialog_after_fight := Dialog.Node.[
 ];
 
 boss_dialog_repeat := Dialog.Node.[
-    .{title = "Boss", text = .["That wad a good fight."], choices = .[.{"", 1}]},
+    .{title = "Boss", text = .["That was a good fight."], choices = .[.{"", 1}]},
     .{title = "Boss", text = .["I'll tell the news to the sensei."], choices = .[.{"", -1}]},
 ];

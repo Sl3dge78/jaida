@@ -30,7 +30,6 @@ Entity :: struct {
     p0 := Vector2.{-0.4, -0.5}; // Relative to the current center in the transform, looking south
     p1 := Vector2.{ 0.4,  0.0};
 
-    // @Cleanup From here on, these are not used by every entity
     sprite_sheet : *Simp.Texture = null;
     sprite : Vector2i;
 
@@ -212,81 +211,6 @@ Entity :: struct {
     }
 }
 
-Player :: struct {
-    using e: Entity;
-    SPEED :: 5.0;
-    tag = .PLAYER;
-    hit_tag = .PLAYER;
-
-    attack_time : float;
-
-    keys : int;
-    can_attack : bool;
-
-    on_death = player_death;
-
-    simulate :: (using player : *Player, delta_time : float) { 
-        update_immunity(xx player, delta_time);
-
-        if anim_state != .ATTACKING {
-            // Movement
-            vel : Vector2;
-            if Input.input_button_states[#char "W"] & .DOWN {
-                vel.y += 1;
-                direction = .NORTH;
-            }
-            if Input.input_button_states[#char "A"] & .DOWN {
-                vel.x -= 1;
-                direction = .WEST;
-            }
-            if Input.input_button_states[#char "S"] & .DOWN {
-                vel.y -= 1; 
-                direction = .SOUTH;
-            }
-            if Input.input_button_states[#char "D"] & .DOWN {
-                vel.x += 1; 
-                direction = .EAST;
-            }
-            norm_vel := Math.unit_vector(vel) * (delta_time * SPEED);
-            if Math.length(norm_vel) > 0 { 
-                anim_time += delta_time;
-                if anim_time > 1.0 then anim_time = 0;
-                anim_state = .WALKING;
-                Game.move_and_slide(*e, norm_vel, context.game.current_map);
-            } else {
-                anim_state = .IDLE;
-            }
-
-            // Attack
-            if can_attack && Input.input_button_states[Input.Key_Code.SPACEBAR] & .START {
-                anim_state = .ATTACKING;
-                sprite.y = 2;
-                attack_time = 0.2;
-                Game.create_weapon(e, .ENEMY, attack_time);
-            }
-
-            sprite = Entity.get_sprite(anim_state, anim_time, direction);
-
-            if Input.input_button_states[#char "E"] & .START {
-                interacted_tile : Vector2i = Vector2i.from(position + forward(direction));
-                Basic.log("Interacting with: %", interacted_tile);
-                for context.game.entities {
-                    if Vector2i.from(it.position) == interacted_tile {
-                        Entity.interact(it, player);
-                    }
-                }
-            }
-        } else {
-            attack_time -= delta_time;
-            if attack_time <= 0 then anim_state = .IDLE;
-        }
-    }
-
-    player_death :: (e : *Entity) {
-        // Game.switch_state(.DEATH);
-    }
-}
-
 Patrol_Behavior :: struct {
     points: []Vector2;
     next_point : int;
@@ -378,7 +302,7 @@ Enemy :: struct {
                         combat_phase = .ATTACK;
                         state = .ATTACKING;
                         combat_timer = ATTACK_TIME;
-                        Game.create_weapon(e, .PLAYER, ATTACK_TIME);
+                        create_weapon(e, .PLAYER, ATTACK_TIME);
                     }
                 }
                 case .ATTACK; {
@@ -404,7 +328,7 @@ Teleporter :: struct {
         if Vector2i.from(player.position) == Vector2i.from(position) {
             if player.world_pos != new_world_pos {
                 old_world_pos := player.world_pos;
-                player.world_pos = new_world_pos; // @Cleanup : we need to do this or the player gets deleted
+                player.world_pos = new_world_pos;
                 if Game.request_map_change(context.game.current_map, new_world_pos) {
                 } else {
                     // The map doesn't exist, to prevent checking every frame, delete ourselves.
@@ -473,6 +397,7 @@ Door :: struct {
             self := cast(*Door)e;
             for t : self.tiles {
                 t.sprite.y += 3;
+                t.flags &= ~.SOLID;
             }
 
             e.flags |= .SHOULD_DELETE;
@@ -502,185 +427,105 @@ Dialog_NPC :: struct {
     }
 }
 
-Boss :: struct {
-    using #as e: Entity;
-    tag = .BOSS;
-    hit_tag = .ENEMY;
-    damage := 1;
 
-    cooldown_time : float = 2.0;
+// --------
+// Creation
 
-    Boss_State :: enum {
-        DASH_TOWARDS :: 0;
-        WHIRLWIND :: 1;
-        DASH_CORNERS :: 2;
-        COOLDOWN :: 5;
-    };
-    state : Boss_State = .COOLDOWN; 
-    previous_attack : Boss_State = .COOLDOWN; // To avoid repeating the same attack twice
+create_enemy :: (pos : Vector2, texture: *Simp.Texture, type: Enemy.Type) -> *Enemy {
+    e := Game.new_entity(Enemy);
+    e.sprite_sheet = texture;
+    e.type = type;
+    e.position = pos;
+    e.flags |= .SOLID;
+    return e;
+}
 
-    attack_time: float;
+create_weapon :: (parent : Entity, target: Entity.Tag, time : float) -> *Entity {
+    weapon := Game.new_entity(Damage_Area);
+    weapon.look_for = target;
+    weapon.position = parent.position;
+    weapon.position += forward(parent.direction);
+    weapon.direction = parent.direction;
+    weapon.world_pos = parent.world_pos;
+    weapon.p0.x = -0.4;
+    weapon.p0.y = -0.2;
+    weapon.p1.x = 0;
+    weapon.p1.y = 0.5;
+    weapon.time_left = time;
+    weapon.sprite_sheet = *context.game.katana_texture;
+    weapon.sprite.x = xx weapon.direction;
+    return xx weapon;
+}
 
-    dash_start_pos : Vector2; // For the lerp
-    dash_target : Vector2; 
-    dash_state : enum {
-        WAIT;
-        WALK;
-        DASH;
-    } = .WAIT;
-    current_dash := 0;
-    starting_corner := 0;
+create_teleporter :: (pos : Vector2, new_pos : Vector2, new_world_pos : Vector2i) -> *Teleporter {
+    tp := Game.new_entity(Teleporter);
+    tp.flags |= .NO_SHADOW;
+    tp.position = pos;
+    tp.world_pos = context.game.current_world_pos;
+    tp.new_pos = new_pos;
+    tp.new_world_pos = new_world_pos;
+    return tp;
+}
 
-    CORNERS :: Vector2.[.{14, 12}, .{24, 12}, .{24, 9}, .{14, 9}];
-    DASH_TIME :: .2;
-    TIME_BETWEEN_DASHES :: 0.1;
+create_bush :: (pos : Vector2) {
+    e := Game.new_entity(Entity);
+    e.position = pos;
+    e.flags |= .SOLID;
+    
+    e.world_pos = context.game.current_world_pos;
+    e.sprite_sheet = *context.game.map_texture;
+    x, y := tile_id_to_xy(*context.game.map_texture, 1895);
+    e.sprite.x = xx x;
+    e.sprite.y = xx y;
 
-    simulate :: (using boss: *Boss, delta_time: float) {
-        Entity.update_immunity(boss, delta_time);
+    e.hit_tag = .ENEMY;
+    e.health = 1;
+}
 
-        if state == {
-            case .COOLDOWN; {
-                cooldown_time -= delta_time;
-                if cooldown_time > .5 {
-                    boss.anim_state = .JUMP_END;
-                } else {
-                    boss.anim_state = .IDLE;
-                }
-                if cooldown_time <= 0 {
-                    state = cast(Boss_State)(Random.random_get() % 3);
-                    while(state == previous_attack) {
-                        state = cast(Boss_State)(Random.random_get() % 3);
-                        Basic.log("%", state);
-                    }
-                    previous_attack = state; 
-                    dash_state = .WAIT;
-                    attack_time = 0;
-                    Basic.log("Boss is currently doing: %", state);
-                }   
-            }
-            case .WHIRLWIND; {
-                whirlwind(boss, delta_time);
-            }
-            case .DASH_TOWARDS; {
-                dash_towards(boss, delta_time);
-            }
-            case .DASH_CORNERS; {
-                dash_corners(boss, delta_time);
-            }
-        }
+create_key :: (pos : Vector2) {
+    e := Game.new_entity(Pickup);
+    e.position = pos;
+    e.world_pos = context.game.current_world_pos;
+    e.sprite_sheet = *context.game.key_texture;
+    e.pickup_type = .KEY;
+}
 
-        sprite = Entity.get_sprite(anim_state, anim_time, direction);
-    }
+create_door :: (pos: Vector2) -> *Door{
+    e := Game.new_entity(Door);
+    e.flags |= .NO_SHADOW;
+    e.position = pos;
+    e.world_pos = context.game.current_world_pos;
+    return e;
+}
 
-    switch_to_cooldown :: (boss: *Boss) {
-        boss.cooldown_time = 2.0;
-        boss.state = .COOLDOWN;
-    }
+create_door_part :: (tile_id : u32, pos : Vector2, solid := true) -> *Entity {
+    e := Game.new_entity(Entity);
+    e.flags |= .NO_SHADOW;
+    if solid then e.flags |= .SOLID;
+    e.position = pos;
+    e.sprite_sheet = *context.game.map_texture;
+    x, y := tile_id_to_xy(*context.game.map_texture, tile_id);
+    e.sprite.x = xx x;
+    e.sprite.y = xx y;
+    return e;
+}
 
-    whirlwind :: (using boss: *Boss, delta_time: float) {
-        player := Game.get_player();
-        player_dir := Math.unit_vector(player.position - boss.position);
+create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture) -> *Entity{
+    e := Game.new_entity(NPC);
+    e.flags |= .SOLID;
+    e.position = pos;
+    e.direction = direction;
+    e.sprite_sheet = texture;
+    e.sprite = Entity.get_sprite(.IDLE, 0, direction);
+    return e;
+}
 
-        attack_time += delta_time;
-        if attack_time >= 4 {
-            switch_to_cooldown(boss);
-        }
-
-        e.direction = cast(Direction)(attack_time * 10) % 4;
-        Game.move_and_slide(*e, player_dir * delta_time * 3.0, context.game.current_map);
-        anim_state = .ATTACKING;
-        if Math.distance(player.position, e.position) <= 1.5 {
-            Entity.deal_damage(xx player, 1);
-        }
-    }
-
-    dash_towards :: (using boss: *Boss, delta_time: float) {
-        player := Game.get_player();
-        player_dir := Math.unit_vector(player.position - boss.position);
-        
-        attack_time += delta_time;
-        if dash_state == {
-            case .WAIT; {
-                if attack_time < 1.4 {
-                    dash_target = player.position; // Record player position's a bit early to give them time to dodge
-                }
-                if attack_time >= 1.5 {
-                    dash_start_pos = e.position;
-                    dash_state = .DASH;
-                    attack_time = 0.0;
-                    e.color = .{1, 1, 1, .5};
-                }
-                anim_state = .POSE;
-            }
-            case .DASH; {
-                e.position = Math.lerp(dash_start_pos, dash_target, Basic.min(1.0, attack_time / DASH_TIME));
-                if Math.distance(player.position, e.position) <= 1 {
-                    Entity.deal_damage(xx player, 1);
-                }
-                if attack_time >= DASH_TIME {
-                    // e.position = dash_target;
-                    e.color = .{1, 1, 1, 1};
-                    switch_to_cooldown(boss);
-                }
-            }
-        }
-    }
-
-    get_dash_corner :: (corners : []Vector2, current_dash: int, starting_corner: int) -> Vector2 {
-        id := (starting_corner + current_dash) % corners.count;
-        return corners[id];
-    }
-
-    dash_corners :: (using boss: *Boss, delta_time: float) {
-        player := Game.get_player();
-        player_dir := Math.unit_vector(player.position - boss.position);
-
-        if dash_state == {
-            case .WAIT; { // Move to the closest corner
-                // Find the closest corner
-                distance := 100.0;
-                starting_corner = 0;
-                for CORNERS {
-                    this_dist := Math.distance(boss.position, it);
-                    if this_dist < distance {
-                        distance = this_dist;
-                        starting_corner = it_index;                        
-                    }
-                }
-                Basic.log("Starting in %", starting_corner);
-                dash_state = .WALK;
-            }
-            case .WALK; {
-                Entity.move_towards(boss, CORNERS[starting_corner], 4.0, delta_time);
-                if Math.distance(boss.position, CORNERS[starting_corner]) <= 0.1 {
-                    current_dash = 0;
-                    dash_state = .DASH;
-                    anim_state = .POSE;
-                    dash_target = get_dash_corner(CORNERS, current_dash + 1, starting_corner);
-                    attack_time = -TIME_BETWEEN_DASHES;
-                    dash_start_pos = boss.position;
-                }
-            }
-            case .DASH; {
-                attack_time += delta_time;
-                if attack_time >= 0 { 
-                    e.position = Math.lerp(dash_start_pos, dash_target, Basic.min(1.0, attack_time / DASH_TIME));
-                    if Math.distance(player.position, e.position) <= 1 {
-                        Entity.deal_damage(xx player, 1);
-                    }
-                    if attack_time >= DASH_TIME {
-                        // Next dash
-                        current_dash += 1;
-                        if current_dash > CORNERS.count {
-                            switch_to_cooldown(boss);
-                        } else {
-                            dash_target = get_dash_corner(CORNERS, current_dash, starting_corner);;
-                            attack_time = -TIME_BETWEEN_DASHES;
-                            dash_start_pos = boss.position;
-                        }
-                    }
-                } 
-            }
-        }
-    }
+create_dialog_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture, dialog : []Dialog.Node) -> *Entity{
+    e := Game.new_entity(Dialog_NPC);
+    e.position = pos;
+    e.direction = direction;
+    e.sprite_sheet = texture;
+    e.dialog = dialog;
+    e.sprite = Entity.get_sprite(.IDLE, 0, direction);
+    return e;
 }

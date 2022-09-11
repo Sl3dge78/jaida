@@ -78,7 +78,6 @@ Map :: struct {
         return success;
     }
 
-    // @Debug : Bounds check?
     get_collision_at :: (using map : Map, pos : Vector2) -> u32 {
         x : int = xx round(pos.x);
         if x < 0 || x >= MAP_WIDTH  then return 1;
@@ -100,5 +99,144 @@ Map :: struct {
         result -= cam;
         result += Vector2.{0.5, 0.5};
         return result;
+    }
+
+    // Kinda dumb, but i'm to lazy to have entities load from a file
+    load_entities :: (map_pos : Vector2i) {
+        if map_pos == HOME { // Interior
+            create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
+            create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
+            father := create_npc(.{21, 12}, Direction.SOUTH, *context.game.old_woman_texture);
+            father.on_interact = father_interact;
+        } else if map_pos == DOJO { 
+            create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
+            sensei := create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture);
+            sensei.on_interact = sensei_on_interact;
+
+            dummy := cast(*Enemy)Game.new_entity(Enemy);
+            dummy.flags |= .SOLID;
+            dummy.tag = .ENEMY;
+            dummy.type = .STATIC;
+            dummy.hit_tag = .ENEMY;
+            dummy.health = 2;
+            dummy.position = .{15, 12};
+            dummy.sprite_sheet = *context.game.map_texture;
+            dummy.on_death = dummy_death;
+            x, y := tile_id_to_xy(*context.game.map_texture, 2622);
+            dummy.sprite.x = xx x;
+            dummy.sprite.y = xx y;
+        } else if map_pos == CHIEFS_HOUSE { 
+            create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
+            chief := create_npc(.{17, 11}, Direction.SOUTH, *context.game.old_woman_texture);
+            chief.on_interact = chief_on_interact;
+        } else if map_pos == RESTAURANT { 
+            create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 8}, .{29, 15.4}, TOWN_SOUTH);
+            create_dialog_npc(.{14, 9}, Direction.NORTH, *context.game.old_woman_texture, dialog_restaurant_1);
+            create_dialog_npc(.{19, 11}, Direction.SOUTH, *context.game.old_woman_texture, dialog_restaurant_2);
+        } else if map_pos == HOUSE_1 { 
+            create_teleporter(.{17, 8}, .{22, 17.4}, TOWN_SOUTH);
+            create_teleporter(.{18, 8}, .{22, 17.4}, TOWN_SOUTH);
+        } else if map_pos == TOWN_SOUTH { // Town South
+            create_teleporter(.{12, 16}, .{14.5, 8.5}, HOME); 
+            create_teleporter(.{4, 13}, .{17.5, 8.5}, CHIEFS_HOUSE); 
+            create_teleporter(.{11, 6}, .{17.5, 7.5}, DOJO); 
+            create_teleporter(.{12, 6}, .{17.5, 7.5}, DOJO); 
+            create_teleporter(.{22, 18}, .{17.5, 8.5}, HOUSE_1); 
+            create_teleporter(.{29, 16}, .{17.5, 8.5}, RESTAURANT); // Restaurant
+        } else if map_pos == TOWN_NORTH { // Town North
+            create_bush(.{18, 14});
+            create_bush(.{18, 8});
+            create_bush(.{16, 8});
+            create_bush(.{14, 8});
+        } else if map_pos == .{1, 1} { // FOREST NORTH
+            create_bush(.{5, 11});
+            create_bush(.{5, 10});
+
+            chest := Game.new_entity(Entity);
+            chest.flags |= .SOLID;
+            chest.flags |= .NO_SHADOW;
+            chest.sprite_sheet = *context.game.map_texture;
+            chest.position = .{21, 15};
+            if (context.game.main_quest_state < .SWORD_OK) {
+                chest.on_interact = player_get_weapon;
+                x, y := tile_id_to_xy(*context.game.map_texture, 2611);
+                chest.sprite.x = xx x;
+                chest.sprite.y = xx y;
+            } else {
+                x, y := tile_id_to_xy(*context.game.map_texture, 2679);
+                chest.sprite.x = xx x;
+                chest.sprite.y = xx y;
+            }
+        } else if map_pos == FOREST_1 { 
+            mush := create_enemy(.{10, 12}, *context.game.mushroom_texture, .FOLLOW);
+            mush.patrol.points = .[.{10, 12}, .{20, 12}];
+            mush.patrol.wait_time = 1.0;
+
+            mush2 := create_enemy(.{17, 3}, *context.game.mushroom_texture, .FOLLOW);
+            mush2.patrol.points = .[.{17, 3}, .{6, 3}];
+            mush2.patrol.wait_time = 1.0;
+
+            mush3 := create_enemy(.{21, 13}, *context.game.mushroom_texture, .FOLLOW);
+            mush3.patrol.points = .[.{21, 13}, .{21, 3}];
+            mush3.patrol.wait_time = .5;
+
+            mush4 := create_enemy(.{30, 10}, *context.game.mushroom_texture, .FOLLOW);
+            mush4.patrol.points = .[.{30, 10}, .{35, 10}, .{36, 4}, .{30, 4}];
+
+            snake := create_enemy(.{14, 18}, *context.game.snake_texture, .FOLLOW);
+            snake.health = 8;
+            snake.damage = 2;
+            snake.deaggro_dist = 6;
+        } else if map_pos == MINIBOSS {
+            if context.game.main_quest_state < .KEY_GOT {
+                miniboss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);
+                miniboss.on_death = (e : *Entity) {
+                    create_key(e.position);
+                    Entity.generic_death(e);
+                };
+            }
+        } else if map_pos == CASTLE_ENTRANCE {
+            create_teleporter(.{33, 14}, .{19, 7.5}, DUNGEON); 
+
+            if context.game.main_quest_state < .DOOR_OPEN {
+                door := create_door(.{28, 5});
+                door.tiles[0] = create_door_part(3448, .{27, 6});
+                door.tiles[1] = create_door_part(3449, .{28, 6});
+                door.tiles[2] = create_door_part(3450, .{29, 6});
+                door.tiles[3] = create_door_part(3384, .{27, 5});
+                door.tiles[4] = create_door_part(3385, .{28, 5});
+                door.tiles[5] = create_door_part(3386, .{29, 5});
+            } else {
+                create_door_part(3640, .{27, 6}, false);
+                create_door_part(3641, .{28, 6}, false);
+                create_door_part(3642, .{29, 6}, false);
+                create_door_part(3576, .{27, 5}, false);
+                create_door_part(3577, .{28, 5}, false);
+                create_door_part(3578, .{29, 5}, false);
+            }
+        } else if map_pos == DUNGEON {
+
+            Game.set_spawn(CASTLE_ENTRANCE, .{33, 13});
+
+            create_teleporter(.{18, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
+            create_teleporter(.{19, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
+            create_teleporter(.{20, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
+
+            boss := Game.new_entity(Boss); 
+            boss.hit_tag = .ENEMY;
+            boss.position = .{19, 12};
+            boss.sprite_sheet = *context.game.red_samurai_texture;
+            if context.game.main_quest_state == .BOSS_KILLED {
+                Boss.reset_boss(boss);
+            } else {
+                Dialog.open(boss_dialog_before_fight);
+                boss.door[0] = create_door_part(1970, .{18, 6});
+                boss.door[1] = create_door_part(1971, .{19, 6});
+                boss.door[2] = create_door_part(1972, .{20, 6});
+            }
+        }
     }
 }

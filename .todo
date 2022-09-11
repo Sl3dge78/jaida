@@ -1,12 +1,11 @@
 
-# In-Progress 
-
-# Inbox 
-- [ ] Projectile entity type ?
+## Bugs 
+- [ ] Hitting from the left doesn't always work
 
 ## System
-- [ ] HUD with health
-- [ ] Puzzles (push blocks?)
+- [ ] HUD
+    - [ ] Health
+    - [ ] Keys
 
 ## Content
 - [X] Death screen
@@ -15,7 +14,7 @@
     - [ ] Blur background?
 - [X] Pause
     - [ ] Blur background?
-- [ ] Main Quest
+- [X] Main Quest
     - [X] Get your sword
     - [X] Training in the village
         - [X] Spawn dummy
@@ -41,30 +40,46 @@
         - [ ] 1 - 2 in village
     - [X] Doesn't move (chief & sensei)
     - [ ] Hits things (dojo)
-- [ ] Level Design
-    - [X] TOWN_SOUTH
-        - [ ] NPCs
-    - [X] -1, 0
-    - [ ] CHIEFS_HOUSE
-    - [X] DOJO
-    - [X] HOUSE_1
-    - [X] RESTAURANT
-    - [X] TOWN_NORTH
-    - [X] 0, 1
-    - [ ] MINIBOSS
-    - [X] CASTLE_ENTRANCE
-    - [ ] DUNGEON
 - [ ] Enemy Variety
     - [X] Forest creatures
-    - [ ] Ranged human?
     - [X] Patrol
 
-# To consider
+## Levels
+- [X] TOWN_SOUTH
+    - [ ] NPCs
+- [X] -1, 0
+- [ ] CHIEFS_HOUSE
+- [X] DOJO
+- [X] HOUSE_1
+- [X] RESTAURANT
+- [X] TOWN_NORTH
+- [X] 0, 1
+- [ ] MINIBOSS
+- [X] CASTLE_ENTRANCE
+- [X] DUNGEON
 
+## Audio 
+- [ ] Music
+    - [ ] Village
+    - [ ] Explore
+    - [ ] Boss 
+    - [ ] Death music?
+- [ ] FX
+    - [ ] Attack
+    - [ ] Boss
+        - [ ] Dash
+        - [ ] Whirlwind (same as attack?)
+    - [ ] Death
+
+# To consider
+- [ ] Ranged human?
+- [ ] Visual effects?
+- [ ] Some "particles" to add life
+- [ ] Projectile entity type?
 - [ ] Dungeon 
     - [ ] Puzzles
 - [ ] Make the key bob up & down
-- [ ] Make the characters bob up & down? -> To try, could look better
+- [ ] Make the characters bob up & down? Could look better
 - [ ] Save state: When we destroy the bushes, they come back. -> Meh
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs. -> Doesn't seem needed yet
 - [ ] Better audio system, using the callback. 

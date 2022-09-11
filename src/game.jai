@@ -78,8 +78,10 @@ Game :: struct {
     mouse_x : int;
     mouse_y : int;
 
-    respawn_position : Vector2 = .{15, 10};
-    respawn_map : Vector2i = starting_world_pos;
+    // respawn_position : Vector2 = .{15, 10};
+    // respawn_map : Vector2i = starting_world_pos;
+    respawn_position : Vector2 = .{19, 6.5};
+    respawn_map : Vector2i = DUNGEON;
 
     current_map : Map;
     current_world_pos : Vector2i;
@@ -167,6 +169,7 @@ Game :: struct {
         dialog_blip = Audio_Stream.load("res/audio/blip.wav");
         
         player := create_player(context.game.respawn_position, context.game.respawn_map);
+        player.can_attack = true;
         Game.switch_state(.MAIN_MENU);
     }
 
@@ -214,6 +217,8 @@ Game :: struct {
                             Damage_Area.simulate(xx it, delta_time);
                         case .PICKUP;
                             Pickup.simulate(xx it, delta_time);
+                        case .BOSS;
+                            Boss.simulate(xx it, delta_time);
                     }
                 }
             }
@@ -557,9 +562,8 @@ Game :: struct {
             create_teleporter(.{19, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
             create_teleporter(.{20, 6}, .{33, 13.4}, CASTLE_ENTRANCE); 
 
-            reset_boss :: (enemy: *Enemy) {
+            reset_boss :: (enemy: *Boss) {
                 enemy.hit_tag = .NONE;
-                enemy.type = .STATIC;
                 enemy.immunity = 0;
                 enemy.anim_state = .IDLE;
                 enemy.sprite = Entity.get_sprite(.IDLE, 0, .SOUTH);
@@ -568,7 +572,10 @@ Game :: struct {
                 };
             }
 
-            boss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);           
+            boss := new_entity(Boss); 
+            boss.hit_tag = .ENEMY;
+            boss.position = .{17, 10};
+            boss.sprite_sheet = *context.game.red_samurai_texture;
             boss.on_death = (e : *Entity) {
                 Dialog.open(boss_dialog_after_fight);
                 context.game.main_quest_state = .BOSS_KILLED;

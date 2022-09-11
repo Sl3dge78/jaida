@@ -29,17 +29,17 @@
     - [X] Go to the castle
         - [X] Open door
     - [X] Kill boss in castle
-        - [ ] Dialog
-        - [ ] Boss fight
-            - [ ] Dash towards player move
-            - [ ] Whirldwind
-            - [ ] Dash corners
+        - [X] Dialog
+        - [X] Boss fight
+            - [X] Dash towards player move
+            - [X] Whirldwind
+            - [X] Dash corners
         - [X] End dialog: Go back to chief
     - [X] Final dialog
 - [ ] NPCs
     - [ ] Walks random
         - [ ] 1 - 2 in village
-    - [ ] Doesn't move (chief & sensei)
+    - [X] Doesn't move (chief & sensei)
     - [ ] Hits things (dojo)
 - [ ] Level Design
     - [X] TOWN_SOUTH

@@ -1,6 +1,7 @@
 
 ## Bugs 
 - [ ] Hitting from the left doesn't always work
+- [X] Enemies get stuck in attack pose while still moving
 
 ## System
 - [ ] HUD

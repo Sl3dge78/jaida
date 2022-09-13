@@ -252,8 +252,8 @@ Enemy :: struct {
         APPROACHING;
         WINDUP;
         ATTACK;
-    }
-    state: Anim_State;
+    } = .NOT_AGGROED;
+    
     combat_timer: float;
 
     WINDUP_TIME :: 0.5;
@@ -271,7 +271,6 @@ Enemy :: struct {
 
             if distance > xx deaggro_dist || player.world_pos != world_pos {
                 combat_phase = .NOT_AGGROED;
-                // npc_move.state = .IDLE;
             }
 
             if #complete combat_phase == {
@@ -279,7 +278,6 @@ Enemy :: struct {
                     if patrol.points.count > 0 {
                         Patrol_Behavior.do_the_patrol(*e, *patrol, delta_time);
                     }
-                    // NPC_Move.update(*npc_move, delta_time);
                     if distance < xx aggro_dist then {
                         combat_phase = .APPROACHING;
                     }
@@ -288,7 +286,7 @@ Enemy :: struct {
                     if distance < 1 {
                         if type == .HUMANOID {
                             combat_phase = .WINDUP;
-                            state = .WINDUP;
+                            anim_state = .WINDUP;
                             combat_timer = WINDUP_TIME;
                         } else {
                             Entity.deal_damage(xx player, damage);
@@ -301,7 +299,7 @@ Enemy :: struct {
                     combat_timer -= delta_time;
                     if combat_timer < 0 {
                         combat_phase = .ATTACK;
-                        state = .ATTACKING;
+                        anim_state = .ATTACKING;
                         combat_timer = ATTACK_TIME;
                         create_weapon(e, .PLAYER, ATTACK_TIME);
                     }
@@ -312,7 +310,7 @@ Enemy :: struct {
                 }
             }
 
-            sprite = Entity.get_sprite(state, anim_time, direction);
+            sprite = Entity.get_sprite(anim_state, anim_time, direction);
         }
     }
 }

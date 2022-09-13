@@ -129,7 +129,7 @@ Map :: struct {
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
-            chief := create_npc(.{17, 11}, Direction.SOUTH, *context.game.old_woman_texture);
+            chief := create_npc(.{17.5, 11}, Direction.SOUTH, *context.game.old_woman_texture);
             chief.on_interact = chief_on_interact;
         } else if map_pos == RESTAURANT { 
             create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
@@ -146,11 +146,20 @@ Map :: struct {
             create_teleporter(.{12, 6}, .{17.5, 7.5}, DOJO); 
             create_teleporter(.{22, 18}, .{17.5, 8.5}, HOUSE_1); 
             create_teleporter(.{29, 16}, .{17.5, 8.5}, RESTAURANT); // Restaurant
+
+            create_npc(.{21, 15}, .SOUTH, *context.game.old_woman_texture);
+            create_npc(.{21, 12}, .SOUTH, *context.game.old_woman_texture, true);
+            create_npc(.{6, 18}, .SOUTH, *context.game.old_woman_texture, true);
+            create_npc(.{17, 7}, .SOUTH, *context.game.old_woman_texture, true);
         } else if map_pos == TOWN_NORTH { // Town North
             create_bush(.{18, 14});
             create_bush(.{18, 8});
             create_bush(.{16, 8});
             create_bush(.{14, 8});
+
+            create_npc(.{9, 9}, .SOUTH, *context.game.old_woman_texture);
+            create_npc(.{29, 2}, .SOUTH, *context.game.old_woman_texture);
+            
         } else if map_pos == .{1, 1} { // FOREST NORTH
             create_bush(.{5, 11});
             create_bush(.{5, 10});
@@ -191,13 +200,24 @@ Map :: struct {
             snake.damage = 2;
             snake.deaggro_dist = 6;
         } else if map_pos == MINIBOSS {
+            
+                miniboss := create_enemy(.{7, 7}, *context.game.red_samurai_texture, .HUMANOID);
             if context.game.main_quest_state < .KEY_GOT {
-                miniboss := create_enemy(.{17, 10}, *context.game.red_samurai_texture, .HUMANOID);
                 miniboss.on_death = (e : *Entity) {
                     create_key(e.position);
                     Entity.generic_death(e);
                 };
             }
+            enemy : *Enemy; 
+
+            enemy = create_enemy(.{33, 16}, *context.game.red_samurai_texture, .HUMANOID);
+            enemy = create_enemy(.{25, 13}, *context.game.red_samurai_texture, .HUMANOID);
+
+            enemy = create_enemy(.{3, 16}, *context.game.red_samurai_texture, .HUMANOID);
+            enemy.patrol.points = .[.{3, 16}, .{10, 16}];
+            enemy.patrol.wait_time = 1.0;
+
+            
         } else if map_pos == CASTLE_ENTRANCE {
             create_teleporter(.{33, 14}, .{19, 7.5}, DUNGEON); 
 

@@ -8,6 +8,7 @@ Entity :: struct {
         WEAPON;
         PICKUP;
         BOSS;
+        NPC;
     };
     tag : Tag;
 
@@ -411,7 +412,45 @@ Door :: struct {
 
 NPC :: struct {
     using #as e : Entity;
-    
+    e.tag = .NPC;
+
+    moves : bool = false;
+
+    random_move_state : enum {
+        IDLE;
+        MOVING;
+    } = .IDLE;
+    idle_time_left : float;
+    move_pos : Vector2;
+
+    simulate :: (using self: *NPC, delta_time: float) {
+        if moves {
+            if random_move_state == {
+                case .IDLE; {
+                    idle_time_left -= delta_time;
+                    if idle_time_left <= 0 { // Start move
+                        target_dir := cast(Direction) (Random.random_get() % 4);
+                        dist := Random.random_get() % 4 + 1;
+                        relative_pos := forward(target_dir) * cast(float)dist;
+
+                        idle_time_left = xx dist;
+
+                        move_pos = self.position + relative_pos;
+                        random_move_state = .MOVING;
+                    }
+                }
+                case .MOVING; {
+                    Entity.move_towards(self, move_pos, 2.0, delta_time);
+                    idle_time_left -= delta_time;
+                    if Math.distance(self.position, move_pos) <= 1.0 || idle_time_left <= 0 {
+                        idle_time_left = Random.random_get_within_range(1.0, 3.0);
+                        random_move_state = .IDLE;
+                    }
+                }
+            }
+        }
+        sprite = Entity.get_sprite(anim_state, anim_time, direction);
+    }
 }
 
 Dialog_NPC :: struct {
@@ -510,13 +549,14 @@ create_door_part :: (tile_id : u32, pos : Vector2, solid := true) -> *Entity {
     return e;
 }
 
-create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture) -> *Entity{
+create_npc :: (pos: Vector2, direction: Direction, texture: *Simp.Texture, moves: bool = false) -> *NPC{
     e := Game.new_entity(NPC);
     e.flags |= .SOLID;
     e.position = pos;
     e.direction = direction;
     e.sprite_sheet = texture;
     e.sprite = Entity.get_sprite(.IDLE, 0, direction);
+    e.moves = moves;
     return e;
 }
 

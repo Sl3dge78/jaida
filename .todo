@@ -35,9 +35,9 @@
             - [X] Dash corners
         - [X] End dialog: Go back to chief
     - [X] Final dialog
-- [ ] NPCs
-    - [ ] Walks random
-        - [ ] 1 - 2 in village
+- [X] NPCs
+    - [X] Walks random
+        - [X] 1 - 2 in village
     - [X] Doesn't move (chief & sensei)
     - [ ] Hits things (dojo)
 - [ ] Enemy Variety
@@ -46,15 +46,15 @@
 
 ## Levels
 - [X] TOWN_SOUTH
-    - [ ] NPCs
+    - [X] NPCs
 - [X] -1, 0
-- [ ] CHIEFS_HOUSE
+- [X] CHIEFS_HOUSE
 - [X] DOJO
 - [X] HOUSE_1
 - [X] RESTAURANT
 - [X] TOWN_NORTH
 - [X] 0, 1
-- [ ] MINIBOSS
+- [X] MINIBOSS
 - [X] CASTLE_ENTRANCE
 - [X] DUNGEON
 

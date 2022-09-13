@@ -219,6 +219,8 @@ Game :: struct {
                             Pickup.simulate(xx it, delta_time);
                         case .BOSS;
                             Boss.simulate(xx it, delta_time);
+                        case .NPC;
+                            NPC.simulate(xx it, delta_time);
                     }
                 }
             }

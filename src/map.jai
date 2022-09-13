@@ -106,12 +106,12 @@ Map :: struct {
         if map_pos == HOME { // Interior
             create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
             create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
-            father := create_npc(.{21, 12}, Direction.SOUTH, *context.game.old_woman_texture);
+            father := create_npc(.{21, 12}, Direction.SOUTH, *actors.old_man);
             father.on_interact = father_interact;
         } else if map_pos == DOJO { 
             create_teleporter(.{17, 7}, .{11.5, 5.4}, TOWN_SOUTH);
             create_teleporter(.{18, 7}, .{11.5, 5.4}, TOWN_SOUTH);
-            sensei := create_npc(.{19, 11}, Direction.SOUTH, *context.game.blue_samurai_texture);
+            sensei := create_npc(.{19, 11}, Direction.SOUTH, *actors.sensei);
             sensei.on_interact = sensei_on_interact;
 
             dummy := cast(*Enemy)Game.new_entity(Enemy);
@@ -129,13 +129,13 @@ Map :: struct {
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
-            chief := create_npc(.{17.5, 11}, Direction.SOUTH, *context.game.old_woman_texture);
+            chief := create_npc(.{17.5, 11}, Direction.SOUTH, *actors.chief);
             chief.on_interact = chief_on_interact;
         } else if map_pos == RESTAURANT { 
             create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{29, 15.4}, TOWN_SOUTH);
-            create_dialog_npc(.{14, 9}, Direction.NORTH, *context.game.old_woman_texture, dialog_restaurant_1);
-            create_dialog_npc(.{19, 11}, Direction.SOUTH, *context.game.old_woman_texture, dialog_restaurant_2);
+            create_dialog_npc(.{14, 9}, Direction.NORTH, *actors.monk, dialog_restaurant_1);
+            create_dialog_npc(.{19, 11}, Direction.SOUTH, *actors.boy, dialog_restaurant_2);
         } else if map_pos == HOUSE_1 { 
             create_teleporter(.{17, 8}, .{22, 17.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{22, 17.4}, TOWN_SOUTH);
@@ -147,18 +147,18 @@ Map :: struct {
             create_teleporter(.{22, 18}, .{17.5, 8.5}, HOUSE_1); 
             create_teleporter(.{29, 16}, .{17.5, 8.5}, RESTAURANT); // Restaurant
 
-            create_npc(.{21, 15}, .SOUTH, *context.game.old_woman_texture);
-            create_npc(.{21, 12}, .SOUTH, *context.game.old_woman_texture, true);
-            create_npc(.{6, 18}, .SOUTH, *context.game.old_woman_texture, true);
-            create_npc(.{17, 7}, .SOUTH, *context.game.old_woman_texture, true);
+            create_npc(.{21, 15}, .SOUTH, *actors.villager);
+            create_npc(.{21, 12}, .SOUTH, *actors.woman, true);
+            create_npc(.{6, 18}, .SOUTH, *actors.old_woman, true);
+            create_npc(.{17, 7}, .SOUTH, *actors.oldman2, true);
         } else if map_pos == TOWN_NORTH { // Town North
             create_bush(.{18, 14});
             create_bush(.{18, 8});
             create_bush(.{16, 8});
             create_bush(.{14, 8});
 
-            create_npc(.{9, 9}, .SOUTH, *context.game.old_woman_texture);
-            create_npc(.{29, 2}, .SOUTH, *context.game.old_woman_texture);
+            create_npc(.{9, 9}, .SOUTH, *actors.villager);
+            create_npc(.{29, 2}, .SOUTH, *actors.villager2);
             
         } else if map_pos == .{1, 1} { // FOREST NORTH
             create_bush(.{5, 11});
@@ -180,28 +180,28 @@ Map :: struct {
                 chest.sprite.y = xx y;
             }
         } else if map_pos == FOREST_1 { 
-            mush := create_enemy(.{10, 12}, *context.game.mushroom_texture, .FOLLOW);
+            mush := create_enemy(.{10, 12}, *actors.mushroom, .FOLLOW);
             mush.patrol.points = .[.{10, 12}, .{20, 12}];
             mush.patrol.wait_time = 1.0;
 
-            mush2 := create_enemy(.{17, 3}, *context.game.mushroom_texture, .FOLLOW);
+            mush2 := create_enemy(.{17, 3}, *actors.mushroom, .FOLLOW);
             mush2.patrol.points = .[.{17, 3}, .{6, 3}];
             mush2.patrol.wait_time = 1.0;
 
-            mush3 := create_enemy(.{21, 13}, *context.game.mushroom_texture, .FOLLOW);
+            mush3 := create_enemy(.{21, 13}, *actors.mushroom, .FOLLOW);
             mush3.patrol.points = .[.{21, 13}, .{21, 3}];
             mush3.patrol.wait_time = .5;
 
-            mush4 := create_enemy(.{30, 10}, *context.game.mushroom_texture, .FOLLOW);
+            mush4 := create_enemy(.{30, 10}, *actors.mushroom, .FOLLOW);
             mush4.patrol.points = .[.{30, 10}, .{35, 10}, .{36, 4}, .{30, 4}];
 
-            snake := create_enemy(.{14, 18}, *context.game.snake_texture, .FOLLOW);
+            snake := create_enemy(.{14, 18}, *actors.snake, .FOLLOW);
             snake.health = 8;
             snake.damage = 2;
             snake.deaggro_dist = 6;
         } else if map_pos == MINIBOSS {
             
-                miniboss := create_enemy(.{7, 7}, *context.game.red_samurai_texture, .HUMANOID);
+            miniboss := create_enemy(.{7, 7}, *actors.samurai, .HUMANOID);
             if context.game.main_quest_state < .KEY_GOT {
                 miniboss.on_death = (e : *Entity) {
                     create_key(e.position);
@@ -210,10 +210,9 @@ Map :: struct {
             }
             enemy : *Enemy; 
 
-            enemy = create_enemy(.{33, 16}, *context.game.red_samurai_texture, .HUMANOID);
-            enemy = create_enemy(.{25, 13}, *context.game.red_samurai_texture, .HUMANOID);
-
-            enemy = create_enemy(.{3, 16}, *context.game.red_samurai_texture, .HUMANOID);
+            enemy = create_enemy(.{33, 16}, *actors.red_samurai, .HUMANOID);
+            enemy = create_enemy(.{25, 13}, *actors.red_samurai, .HUMANOID);
+            enemy = create_enemy(.{3, 16}, *actors.red_samurai, .HUMANOID);
             enemy.patrol.points = .[.{3, 16}, .{10, 16}];
             enemy.patrol.wait_time = 1.0;
 
@@ -248,7 +247,7 @@ Map :: struct {
             boss := Game.new_entity(Boss); 
             boss.hit_tag = .ENEMY;
             boss.position = .{19, 12};
-            boss.sprite_sheet = *context.game.red_samurai_texture;
+            boss.sprite_sheet = *actors.ninja;
             if context.game.main_quest_state == .BOSS_KILLED {
                 Boss.reset_boss(boss);
             } else {

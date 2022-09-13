@@ -45,6 +45,39 @@ load_texture_no_filter :: (tex : *Simp.Texture, path : string) -> bool {
 
 #add_context game : Game;
 
+load_all_actors :: () {
+    #insert #run -> string {
+        #import "File_Utilities";
+        builder : Basic.String_Builder;
+
+        Basic.set_working_directory("bin");
+        all_actor_files := file_list("res/actor");
+        for all_actor_files {
+            name := String.path_strip_extension(String.path_filename(it));
+            Basic.print_to_builder(*builder, "load_texture_no_filter(*actors.%, \"%\");\n", name, it);
+        }
+        Basic.set_working_directory("../");
+        return Basic.builder_to_string(*builder);
+    };
+}
+
+Actors :: struct {
+
+    // Contains all the textures
+    #insert #run -> string {
+        builder : Basic.String_Builder;
+
+        all_actor_files := file_list("bin/res/actor");
+        for all_actor_files {
+            name := String.path_strip_extension(String.path_filename(it));
+            Basic.print_to_builder(*builder, "%: Simp.Texture;\n", name);
+        }
+        return Basic.builder_to_string(*builder);
+    };
+}
+
+actors : Actors;
+
 Game :: struct {
     State :: enum {
         GAME;
@@ -90,13 +123,8 @@ Game :: struct {
     camera_position : Vector2 = .{0.5, 0.75};
 
     shadow_texture       : Simp.Texture;
-    blue_samurai_texture : Simp.Texture;
-    red_samurai_texture  : Simp.Texture;
-    old_woman_texture    : Simp.Texture;
-    katana_texture       : Simp.Texture;
     key_texture          : Simp.Texture;
-    mushroom_texture     : Simp.Texture;
-    snake_texture        : Simp.Texture;
+    katana_texture       : Simp.Texture;
 
     entities : [..]* Entity;
 
@@ -156,13 +184,10 @@ Game :: struct {
         load_texture_no_filter(*dialogbox_choice_texture, "res/ui/dialogbox_choice.png");
 
         load_texture_no_filter(*shadow_texture, "res/shadow.png");
-        load_texture_no_filter(*blue_samurai_texture, "res/blue_samurai.png");
-        load_texture_no_filter(*red_samurai_texture, "res/red_samurai.png");
 
-        load_texture_no_filter(*old_woman_texture, "res/old_woman.png");
+        load_all_actors();
 
-        load_texture_no_filter(*mushroom_texture, "res/mushroom.png");
-        load_texture_no_filter(*snake_texture, "res/snake.png");
+        // Items
         load_texture_no_filter(*katana_texture, "res/katana.png");
         load_texture_no_filter(*key_texture, "res/key.png");
 

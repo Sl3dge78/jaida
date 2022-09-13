@@ -18,8 +18,6 @@ round :: (x : float32) -> float32 {
     return ifx x >= 0.0 then floor(x+0.5) else ceil(x+0.5);
 }
 
-#placeholder DEVELOPER;
-
 #load "game.jai";
 
 #load "entities/entities.jai";
@@ -33,9 +31,13 @@ round :: (x : float32) -> float32 {
 #load "dialogs.jai";
 #load "audio.jai";
 #load "npc.jai";
+
+//#placeholder DEVELOPER;
+
 #if DEVELOPER {
     #load "editor.jai";
 }
+
 
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;

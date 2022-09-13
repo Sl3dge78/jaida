@@ -75,7 +75,7 @@ Player :: struct {
 
 create_player :: (pos : Vector2, world_pos : Vector2i) -> *Player {
     player := Game.new_entity(Player);
-    player.sprite_sheet = *context.game.blue_samurai_texture;
+    player.sprite_sheet = *actors.blue_samurai;
     player.position = pos;
     player.world_pos = world_pos;
     player.flags |= .SOLID;

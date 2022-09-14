@@ -209,7 +209,6 @@ Map :: struct {
                 };
             }
             enemy : *Enemy; 
-
             enemy = create_enemy(.{33, 16}, *actors.red_samurai, .HUMANOID);
             enemy = create_enemy(.{25, 13}, *actors.red_samurai, .HUMANOID);
             enemy = create_enemy(.{3, 16}, *actors.red_samurai, .HUMANOID);
@@ -256,6 +255,10 @@ Map :: struct {
                 boss.door[1] = create_door_part(1971, .{19, 6});
                 boss.door[2] = create_door_part(1972, .{20, 6});
             }
+        } else if map_pos == .{-1, -1} {
+            create_enemy(.{33, 16}, *actors.red_samurai, .STATIC);
+
         }
+
     }
 }

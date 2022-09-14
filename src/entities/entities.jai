@@ -118,9 +118,9 @@ Entity :: struct {
                 o1.y = p1.x;
             }
             case .EAST; {
-                o0.x = -p0.y;
+                o0.x = -p1.y;
                 o0.y = p0.x;
-                o1.x = -p1.y;
+                o1.x = -p0.y;
                 o1.y = p1.x;
             }
         }

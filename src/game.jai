@@ -122,6 +122,7 @@ Game :: struct {
     
     camera_position : Vector2 = .{0.5, 0.75};
 
+    hearts_texture       : Simp.Texture;
     shadow_texture       : Simp.Texture;
     key_texture          : Simp.Texture;
     katana_texture       : Simp.Texture;
@@ -177,15 +178,18 @@ Game :: struct {
         font = Simp.get_font_at_size("res", "monospace.ttf", 8 * ZOOM);
         small_font = Simp.get_font_at_size("res", "monospace.ttf", 4 * ZOOM);
 
+        // Map
         load_texture_no_filter(*map_texture, "res/world.png");
+
+        // UI
+        load_texture_no_filter(*hearts_texture, "res/ui/hearts.png");
 
         load_texture_no_filter(*dialogbox_texture, "res/ui/dialogbox.png");
         load_texture_no_filter(*dialogbox_notitle_texture, "res/ui/dialogbox_notitle.png");
         load_texture_no_filter(*dialogbox_choice_texture, "res/ui/dialogbox_choice.png");
 
-        load_texture_no_filter(*shadow_texture, "res/shadow.png");
-
         load_all_actors();
+        load_texture_no_filter(*shadow_texture, "res/shadow.png");
 
         // Items
         load_texture_no_filter(*katana_texture, "res/katana.png");
@@ -356,6 +360,10 @@ Game :: struct {
         layer_separator(2);
 
         // UI
+        if game.state == .GAME {
+            draw_ui();
+        }
+
         if game.state == .DIALOG {
             Dialog.draw();
         }
@@ -407,6 +415,45 @@ Game :: struct {
         #if DEVELOPER {
             Editor.draw();
         }        
+    }
+
+    draw_ui :: () {
+        Simp.set_shader_for_images(*context.game.hearts_texture);
+
+        player := Game.get_player();
+
+        x0 : float = 16 * ZOOM * 1; 
+        y0 : float = xx (context.game.screen_height - 16 * ZOOM * 2);
+
+        heart_size := 16;
+
+        for 0..3 { // @Hardcoded
+            uv0 := Vector2.{0, 0};
+            uv1 := Vector2.{0.5, 1};
+            if player.health <= it {
+                uv0 = .{0.5, 0};
+                uv1 = .{1, 1};
+            }
+            
+            Simp.immediate_quad(
+                make_vector2(x0, y0),
+                make_vector2(x0 + 16 * ZOOM, y0),
+                make_vector2(x0 + 16 * ZOOM, y0 + 16 * ZOOM),
+                make_vector2(x0, y0 + 16 * ZOOM), 
+                .{1, 1, 1, 1},
+                uv0, 
+                make_vector2(uv1.x, uv0.y),
+                make_vector2(uv1.x, uv1.y),
+                make_vector2(uv0.x, uv1.y));
+            x0 += 16 * ZOOM;
+        }
+
+        // Key
+        if player.keys > 0 {
+            x0 += 16 * ZOOM; // 1 tile padding
+            Simp.set_shader_for_images(*context.game.key_texture);
+            Simp.immediate_quad(x0, y0, xx (x0 + 16 * ZOOM), xx (y0 + 16 * ZOOM), .{1, 1, 1, 1});
+        }
     }
 
     request_map_change :: (current_map : Map, map_pos : Vector2i) -> bool {

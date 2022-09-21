@@ -129,7 +129,7 @@ Map :: struct {
         } else if map_pos == CHIEFS_HOUSE { 
             create_teleporter(.{17, 8}, .{4, 12.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{4, 12.4}, TOWN_SOUTH);
-            chief := create_npc(.{17.5, 11}, Direction.SOUTH, *actors.chief);
+            chief := create_npc(.{17, 11}, Direction.SOUTH, *actors.chief);
             chief.on_interact = chief_on_interact;
         } else if map_pos == RESTAURANT { 
             create_teleporter(.{17, 8}, .{29, 15.4}, TOWN_SOUTH);

@@ -41,7 +41,7 @@ Dialog :: struct {
                 
                 char_timer += get_char_timer(line[current_char]);
                 if Basic.is_alpha(line[current_char]) {
-                    Audio_Stream.mix_and_play_immediate(*dialog_blip, volume, audio_device);
+                    Audio_System.play(*audio_system, 0, *dialog_blip);
                 }
                 current_char += 1;
                 if current_char >= line.count { // We finished the line

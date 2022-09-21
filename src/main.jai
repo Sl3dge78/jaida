@@ -18,6 +18,10 @@ round :: (x : float32) -> float32 {
     return ifx x >= 0.0 then floor(x+0.5) else ceil(x+0.5);
 }
 
+todo :: () #expand {
+    Basic.assert(false, "Todo!");
+}
+
 #load "game.jai";
 
 #load "entities/entities.jai";
@@ -37,7 +41,6 @@ round :: (x : float32) -> float32 {
 #if DEVELOPER {
     #load "editor.jai";
 }
-
 
 TILE_SIZE :: 16;
 TILE_HALF :: TILE_SIZE / 2;
@@ -70,21 +73,9 @@ main :: () {
     // Note: Editor is added to the context where they are defined.
     game_state := *context.game;
 
-    requested_spec := SDL_AudioSpec.{
-        freq = 44100,
-        format = AUDIO_S16,
-        channels = 1,
-        silence = 0,
-        samples = 4096,
-        size = 0,
-        callback = null,
-        userdata = null,
-    };
-    obtained : SDL_AudioSpec = ---;
-    game_state.audio_device = SDL_OpenAudioDevice(null, 0, *requested_spec, *obtained, 0);
-    Basic.assert(game_state.audio_device != 0);
-    defer SDL_CloseAudioDevice(game_state.audio_device);
-    SDL_PauseAudioDevice(context.game.audio_device, 0);
+    // Init audio
+    Audio_System.init(*game_state.audio_system);
+    defer Audio_System.deinit(*game_state.audio_system);
 
     game_state.screen_width, game_state.screen_height = Simp.get_render_dimensions(window);
     Simp.set_render_target(window);

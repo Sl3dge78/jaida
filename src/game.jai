@@ -102,8 +102,8 @@ Game :: struct {
     screen_height : s32;
     starting_world_pos :: Vector2i.{-1, 0};
 
-    audio_device : SDL_AudioDeviceID = ---;
-    volume : s8 = 32;
+    // Audio
+    audio_system : Audio_System;
 
     font : *Simp.Dynamic_Font;
     small_font : *Simp.Dynamic_Font;
@@ -142,6 +142,7 @@ Game :: struct {
     current_char : int; // The character we last drew
     char_timer : float; // Time until the next character gets drawn
     dialog_blip : Audio_Stream;
+    village_music : Audio_Stream;
 
     // Quest
     main_quest_state : enum {
@@ -195,7 +196,8 @@ Game :: struct {
         load_texture_no_filter(*katana_texture, "res/katana.png");
         load_texture_no_filter(*key_texture, "res/key.png");
 
-        dialog_blip = Audio_Stream.load("res/audio/blip.wav");
+        dialog_blip = Audio_Stream.load("res/audio/blip.wav", context.game.audio_system.spec);
+        village_music = Audio_Stream.load("res/audio/village.wav", context.game.audio_system.spec);
         
         player := create_player(context.game.respawn_position, context.game.respawn_map);
         // player.can_attack = true;
@@ -228,6 +230,18 @@ Game :: struct {
                     } else {
                         game.quit = true;
                     }
+                }
+
+                if Input.input_button_states[#char "G"] & .START {
+                    Audio_System.play(*game.audio_system, 0, *game.dialog_blip, false);
+                }
+
+                if Input.input_button_states[#char "H"] & .START {
+                    Audio_System.play(*game.audio_system, 0, *game.dialog_blip, true);
+                }
+
+                if Input.input_button_states[#char "H"] & .END {
+                    Audio_System.stop(*game.audio_system, 0);
                 }
             }
             case .GAME; {
@@ -405,7 +419,7 @@ Game :: struct {
 
                 Simp.draw_text(game.font, 80, ifx game.death_current_selection == .CONTINUE then 250 else 200, ">");
 
-                Simp.draw_text(game.font, 100, 250, "Continue",
+                Simp.draw_text(game.font, 100, 250, "Retry",
                     ifx game.death_current_selection == .CONTINUE then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
                 Simp.draw_text(game.font, 100, 200, "Quit", 
                     ifx game.death_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
@@ -527,6 +541,7 @@ Game :: struct {
                 }             }
             case .MAIN_MENU; {
                 Game.request_map_change(game.current_map, .{0, 0});
+                Audio_System.play(*game.audio_system, 1, *game.village_music, true);
             }
             case .DEATH; {
                 game.death_timer = 4.0;

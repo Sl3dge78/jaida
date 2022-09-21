@@ -45,38 +45,78 @@ load_texture_no_filter :: (tex : *Simp.Texture, path : string) -> bool {
 
 #add_context game : Game;
 
-load_all_actors :: () {
-    #insert #run -> string {
-        #import "File_Utilities";
-        builder : Basic.String_Builder;
+// --------
+// Ressource management
 
-        Basic.set_working_directory("bin");
-        all_actor_files := file_list("res/actor");
-        for all_actor_files {
-            name := String.path_strip_extension(String.path_filename(it));
-            Basic.print_to_builder(*builder, "load_texture_no_filter(*actors.%, \"%\");\n", name, it);
-        }
-        Basic.set_working_directory("../");
-        return Basic.builder_to_string(*builder);
-    };
-}
+// @Todo: This could be generic
 
 Actors :: struct {
-
-    // Contains all the textures
+    
+    // Creates all members with names = to the filenames
     #insert #run -> string {
-        builder : Basic.String_Builder;
+        #import "File_Utilities";
 
-        all_actor_files := file_list("bin/res/actor");
-        for all_actor_files {
+        builder : Basic.String_Builder;
+        all_files := file_list("bin/res/actor");
+        for all_files {
             name := String.path_strip_extension(String.path_filename(it));
             Basic.print_to_builder(*builder, "%: Simp.Texture;\n", name);
         }
         return Basic.builder_to_string(*builder);
     };
+
+    load_all :: () {
+        #insert #run -> string {
+            builder : Basic.String_Builder;
+
+            Basic.set_working_directory("bin");
+            all_files := file_list("res/actor");
+            for all_files {
+                name := String.path_strip_extension(String.path_filename(it));
+                Basic.print_to_builder(*builder, "load_texture_no_filter(*actors.%, \"%\");\n", name, it);
+            }
+            Basic.set_working_directory("../");
+            return Basic.builder_to_string(*builder);
+        };
+    }
 }
 
 actors : Actors;
+
+Sounds :: struct {
+
+    // Creates all members with names = to the filenames
+    #insert #run -> string {
+        builder : Basic.String_Builder;
+
+        all_files := file_list("bin/res/audio");
+        for all_files {
+            name := String.path_strip_extension(String.path_filename(it));
+            Basic.print_to_builder(*builder, "%: Audio_Stream;\n", name);
+        }
+        return Basic.builder_to_string(*builder);
+    };
+
+    load_all :: () {
+        #insert #run -> string {
+            #import "File_Utilities";
+            builder : Basic.String_Builder;
+
+            Basic.set_working_directory("bin");
+            all_files := file_list("res/audio");
+            for all_files {
+                name := String.path_strip_extension(String.path_filename(it));
+                Basic.print_to_builder(*builder, "sounds.% = Audio_Stream.load(\"%\", context.game.audio_system.spec);\n", name, it);
+            }
+            Basic.set_working_directory("../");
+            return Basic.builder_to_string(*builder);
+        };
+    }
+
+
+}
+
+sounds : Sounds;
 
 Game :: struct {
     State :: enum {
@@ -141,8 +181,6 @@ Game :: struct {
     current_line : int; // The line we're in the process of drawing
     current_char : int; // The character we last drew
     char_timer : float; // Time until the next character gets drawn
-    dialog_blip : Audio_Stream;
-    village_music : Audio_Stream;
 
     // Quest
     main_quest_state : enum {
@@ -189,15 +227,14 @@ Game :: struct {
         load_texture_no_filter(*dialogbox_notitle_texture, "res/ui/dialogbox_notitle.png");
         load_texture_no_filter(*dialogbox_choice_texture, "res/ui/dialogbox_choice.png");
 
-        load_all_actors();
+        Actors.load_all();
         load_texture_no_filter(*shadow_texture, "res/shadow.png");
 
         // Items
         load_texture_no_filter(*katana_texture, "res/katana.png");
         load_texture_no_filter(*key_texture, "res/key.png");
 
-        dialog_blip = Audio_Stream.load("res/audio/blip.wav", context.game.audio_system.spec);
-        village_music = Audio_Stream.load("res/audio/village.wav", context.game.audio_system.spec);
+        Sounds.load_all();
         
         player := create_player(context.game.respawn_position, context.game.respawn_map);
         // player.can_attack = true;
@@ -233,11 +270,11 @@ Game :: struct {
                 }
 
                 if Input.input_button_states[#char "G"] & .START {
-                    Audio_System.play(*game.audio_system, 0, *game.dialog_blip, false);
+                    Audio_System.play(*game.audio_system, 0, *sounds.blip, false);
                 }
 
                 if Input.input_button_states[#char "H"] & .START {
-                    Audio_System.play(*game.audio_system, 0, *game.dialog_blip, true);
+                    Audio_System.play(*game.audio_system, 0, *sounds.blip, true);
                 }
 
                 if Input.input_button_states[#char "H"] & .END {
@@ -541,7 +578,7 @@ Game :: struct {
                 }             }
             case .MAIN_MENU; {
                 Game.request_map_change(game.current_map, .{0, 0});
-                Audio_System.play(*game.audio_system, 1, *game.village_music, true);
+                Audio_System.play(*game.audio_system, 1, *sounds.village, true);
             }
             case .DEATH; {
                 game.death_timer = 4.0;

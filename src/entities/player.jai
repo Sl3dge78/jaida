@@ -49,6 +49,7 @@ Player :: struct {
                 sprite.y = 2;
                 attack_time = 0.2;
                 create_weapon(e, .ENEMY, attack_time);
+                Audio_System.play(*context.game.audio_system, FX_CHANNEL, *sounds.slash);
             }
 
             sprite = Entity.get_sprite(anim_state, anim_time, direction);

@@ -7,6 +7,11 @@
 - [X] HUD
     - [X] Health
     - [X] Keys
+- [X] Audio
+    - [X] Music playing
+    - [X] Fx playing
+        - [ ] more sfx channels
+        - [ ] queue sfx (take the first non playing channel)
 
 ## Content
 - [X] Death screen
@@ -66,7 +71,9 @@
     - [ ] Boss 
     - [ ] Death music?
 - [ ] FX
-    - [ ] Attack
+    - [X] Attack
+    - [X] Hit
+    - [X] Key
     - [ ] Boss
         - [ ] Dash
         - [ ] Whirlwind (same as attack?)

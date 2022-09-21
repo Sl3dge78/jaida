@@ -4,6 +4,9 @@ SDL_LoadWAV :: (file: *u8, spec: *SDL_AudioSpec, audio_buf: **u8, audio_len: *u3
     return SDL_LoadWAV_RW(SDL_RWFromFile(file, "rb"),1, spec,audio_buf,audio_len);
 }
 
+FX_CHANNEL :: 0;
+BGM_CHANNEL :: 1;
+
 Audio_Channel :: struct {
     stream: *Audio_Stream;
     position: u32; // Position in stream

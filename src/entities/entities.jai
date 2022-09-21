@@ -178,6 +178,7 @@ Entity :: struct {
         if ett.immunity <= 0 {
             ett.health -= amount;
             ett.immunity = IMMUNITY_TIME;
+            Audio_System.play(*context.game.audio_system, FX_CHANNEL, *sounds.hurt);
         }
         if ett.health <= 0 { 
             if ett.on_death then ett.on_death(ett);
@@ -380,6 +381,7 @@ Pickup :: struct {
         if collides {
             flags |= .SHOULD_DELETE;
             player.keys += 1;
+            Audio_System.play(*context.game.audio_system, FX_CHANNEL, *sounds.key);
         }
     }
 }

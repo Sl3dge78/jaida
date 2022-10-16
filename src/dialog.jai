@@ -58,6 +58,10 @@ Dialog :: struct {
                 current_char = 0;
             } else { // Go to the next dialog/end
                 if current.choices.count == 0 || (current.choices.count > 0 && current.choices[current_choice].jump == -1) {
+                    if context.game.on_dialog_complete {
+                        on_dialog_complete();  
+                        context.game.on_dialog_complete = null;
+                    } 
                     context.game.state = .GAME; // End the dialog
                     
                 } else {

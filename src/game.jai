@@ -181,6 +181,7 @@ Game :: struct {
     current_line : int; // The line we're in the process of drawing
     current_char : int; // The character we last drew
     char_timer : float; // Time until the next character gets drawn
+    on_dialog_complete : () -> () = null;
 
     // Quest
     main_quest_state : enum {
@@ -267,18 +268,6 @@ Game :: struct {
                     } else {
                         game.quit = true;
                     }
-                }
-
-                if Input.input_button_states[#char "G"] & .START {
-                    Audio_System.play(*game.audio_system, 0, *sounds.blip, false);
-                }
-
-                if Input.input_button_states[#char "H"] & .START {
-                    Audio_System.play(*game.audio_system, 0, *sounds.blip, true);
-                }
-
-                if Input.input_button_states[#char "H"] & .END {
-                    Audio_System.stop(*game.audio_system, 0);
                 }
             }
             case .GAME; {
@@ -578,7 +567,7 @@ Game :: struct {
                 }             }
             case .MAIN_MENU; {
                 Game.request_map_change(game.current_map, .{0, 0});
-                Audio_System.play(*game.audio_system, 1, *sounds.village, true);
+                Audio_System.play_if_not_playing(*game.audio_system, 1, *sounds.village);
             }
             case .DEATH; {
                 game.death_timer = 4.0;

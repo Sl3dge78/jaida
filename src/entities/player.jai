@@ -70,6 +70,7 @@ Player :: struct {
     }
 
     player_death :: (e : *Entity) {
+        Audio_System.play(*context.game.audio_system, 1, *sounds.death, false); 
         Game.switch_state(.DEATH);
     }
 }

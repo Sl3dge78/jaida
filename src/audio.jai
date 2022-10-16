@@ -85,6 +85,15 @@ Audio_System :: struct {
             self.channels[channel].flags |= .LOOP;
         }
     }
+
+    play_if_not_playing :: (self: *Audio_System, channel: u32, stream: *Audio_Stream) {
+        if self.channels[channel].stream == stream then return;
+
+        self.channels[channel].stream = stream;
+        self.channels[channel].position = 0;
+        self.channels[channel].flags = 0;
+        self.channels[channel].flags |= .LOOP;
+    }
     
     stop :: (self: *Audio_System, channel: u32) {
         self.channels[channel].flags |= .STOPPED;

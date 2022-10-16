@@ -4,6 +4,7 @@ Math    :: #import "Math";
 Random  :: #import "Random";
 B_Array :: #import "Bucket_Array";
 File    :: #import "File";
+File_Utilities :: #import "File_Utilities";
 
 #import "SDL"; // Audio
 
@@ -64,6 +65,13 @@ forward :: (dir : Direction) -> Vector2 {
 
 main :: () {
     // Init
+    {
+        Basic.push_allocator(Basic.temp);
+        wd := File_Utilities.parse_path(to_string(__command_line_arguments[0]));
+        wd_string := path_to_string(wd, wd.words.count - 1);
+        Basic.set_working_directory(wd_string);
+    }
+
     Basic.init_time();
     SDL_Init(SDL_INIT_AUDIO);
     defer SDL_Quit();

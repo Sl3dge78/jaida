@@ -113,4 +113,7 @@ main :: () {
         Simp.swap_buffers(window);
         Basic.reset_temporary_storage();
     }
+
+    // Game.unload();
+    // Basic.reset_temporary_storage();
 }

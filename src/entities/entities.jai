@@ -25,6 +25,7 @@ Entity :: struct {
     direction : Direction;
     world_pos : Vector2i;
 
+
     color : Vector4 = .{1, 1, 1, 1};
 
     // Hitbox
@@ -88,12 +89,12 @@ Entity :: struct {
     draw_shadow :: (e: *Entity) {
         if !e.sprite_sheet || (e.flags & .HIDDEN) then return;
         if !(e.flags & .NO_SHADOW) {
-        Simp.set_shader_for_images(*context.game.shadow_texture);
-        offset :: (1.0/16.0) * 2;
-        s_x0, s_y0 := Map.map_to_screen(context.game.camera_position, e.position - Vector2.{0.5, (0.5 + offset)});
-        s_x1, s_y1 := Map.map_to_screen(context.game.camera_position, e.position + Vector2.{0.5, (0.5 - offset)});
-        Simp.immediate_quad(cast(float)s_x0, cast(float)s_y0, cast(float)s_x1, cast(float)s_y1, make_vector4(1, 1, 1, 0.8));
-    }
+            Simp.set_shader_for_images(*context.game.shadow_texture);
+            offset :: (1.0/16.0) * 2;
+            s_x0, s_y0 := Map.map_to_screen(context.game.camera_position, e.position - Vector2.{0.5, (0.5 + offset)});
+            s_x1, s_y1 := Map.map_to_screen(context.game.camera_position, e.position + Vector2.{0.5, (0.5 - offset)});
+            Simp.immediate_quad(cast(float)s_x0, cast(float)s_y0, cast(float)s_x1, cast(float)s_y1, make_vector4(1, 1, 1, 0.8));
+        }
     }
 
     orient_hitbox :: (using e: Entity) -> Vector2, Vector2{
@@ -149,7 +150,6 @@ Entity :: struct {
         final_vel := Game.move_and_slide(e, vel, context.game.current_map);
 
         Entity.set_direction_from_velocity(e, vel);
-
         if Math.length(final_vel) > 0 {
             anim_time += delta_time;
             if anim_time > 1.0 then anim_time = 0;
@@ -178,7 +178,7 @@ Entity :: struct {
         if ett.immunity <= 0 {
             ett.health -= amount;
             ett.immunity = IMMUNITY_TIME;
-            Audio_System.play(*context.game.audio_system, FX_CHANNEL, *sounds.hurt);
+            Audio_System.play_fx(*context.game.audio_system, *sounds.hurt);
         }
         if ett.health <= 0 { 
             if ett.on_death then ett.on_death(ett);
@@ -219,7 +219,7 @@ Patrol_Behavior :: struct {
     wait_time : float;
     wait_timer : float;
 
-    do_the_patrol :: (e : *Entity, using patrol: *Patrol_Behavior, delta_time: float) {
+    do_the_patrol :: (e : *Entity, using patrol: *Patrol_Behavior, speed: float, delta_time: float) {
         if wait_timer > 0 then wait_timer -= delta_time;
         if wait_timer <= 0 {
             distance_to_next_point := Math.distance(e.position, points[next_point]);
@@ -228,7 +228,7 @@ Patrol_Behavior :: struct {
                 wait_timer += wait_time;
                 if next_point >= points.count then next_point = 0;
             }
-            Entity.move_towards(e, points[next_point], 3, delta_time);
+            Entity.move_towards(e, points[next_point], speed, delta_time);
         }
     }
 }
@@ -256,6 +256,7 @@ Enemy :: struct {
     } = .NOT_AGGROED;
     
     combat_timer: float;
+    speed : float = 3;
 
     WINDUP_TIME :: 0.5;
     ATTACK_TIME :: 0.2;
@@ -277,7 +278,7 @@ Enemy :: struct {
             if #complete combat_phase == {
                 case .NOT_AGGROED; {
                     if patrol.points.count > 0 {
-                        Patrol_Behavior.do_the_patrol(*e, *patrol, delta_time);
+                        Patrol_Behavior.do_the_patrol(*e, *patrol, enemy.speed, delta_time);
                     }
                     if distance < xx aggro_dist then {
                         combat_phase = .APPROACHING;
@@ -293,7 +294,7 @@ Enemy :: struct {
                             Entity.deal_damage(xx player, damage);
                         }
                     } else {
-                        Entity.move_towards(*e, player.position, 3, delta_time);
+                        Entity.move_towards(*e, player.position, enemy.speed, delta_time);
                     }
                 }
                 case .WINDUP; {
@@ -303,6 +304,7 @@ Enemy :: struct {
                         anim_state = .ATTACKING;
                         combat_timer = ATTACK_TIME;
                         create_weapon(e, .PLAYER, ATTACK_TIME);
+                        Audio_System.play_fx(*context.game.audio_system, *sounds.slash);
                     }
                 }
                 case .ATTACK; {
@@ -381,7 +383,7 @@ Pickup :: struct {
         if collides {
             flags |= .SHOULD_DELETE;
             player.keys += 1;
-            Audio_System.play(*context.game.audio_system, FX_CHANNEL, *sounds.key);
+            Audio_System.play_fx(*context.game.audio_system, *sounds.key);
         }
     }
 }

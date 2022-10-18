@@ -49,7 +49,6 @@ load_texture_no_filter :: (tex : *Simp.Texture, path : string) -> bool {
 // Ressource management
 
 // @Todo: This could be generic
-
 Actors :: struct {
     
     // Creates all members with names = to the filenames
@@ -112,8 +111,6 @@ Sounds :: struct {
             return Basic.builder_to_string(*builder);
         };
     }
-
-
 }
 
 sounds : Sounds;
@@ -240,6 +237,14 @@ Game :: struct {
         player := create_player(context.game.respawn_position, context.game.respawn_map);
         // player.can_attack = true;
         Game.switch_state(.MAIN_MENU);
+    }
+
+    unload :: () { 
+        for context.game.entities {
+            Basic.free(it);
+            remove it;            
+        }
+        Basic.array_free(context.game.entities);
     }
 
     update :: (delta_time : float32) {
@@ -567,7 +572,7 @@ Game :: struct {
                 }             }
             case .MAIN_MENU; {
                 Game.request_map_change(game.current_map, .{0, 0});
-                Audio_System.play_if_not_playing(*game.audio_system, 1, *sounds.village);
+                Audio_System.change_bgm(*game.audio_system, *sounds.village);
             }
             case .DEATH; {
                 game.death_timer = 4.0;

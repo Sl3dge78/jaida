@@ -10,8 +10,7 @@ build :: () {
     options.output_path = "bin";
     options.intermediate_path = "tmp";
     options.output_type = .EXECUTABLE;
-    //options.emit_debug_info = .DEFAULT;
-    //options.backend = .X64;
+    // Compiler.set_optimization_level(*options, 2, 0);
     
     is_lsp := false;
     lsp_message : (*Compiler.Message) -> void;
@@ -29,7 +28,7 @@ build :: () {
     Compiler.set_build_options(options, w);
     Compiler.compiler_begin_intercept(w);
     Compiler.add_build_string("DEVELOPER :: true;", w); // @Completeness: add release flag
-    // Compiler.add_build_string("DEVELOPER :: false;", w); // @Completeness: add release flag
+    //Compiler.add_build_string("DEVELOPER :: false;", w); // @Completeness: add release flag
     Compiler.add_build_file("src/main.jai", w);
     
     

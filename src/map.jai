@@ -104,7 +104,7 @@ Map :: struct {
     // Kinda dumb, but i'm to lazy to have entities load from a file
     load_entities :: (map_pos : Vector2i) {
         if map_pos == HOME { // Interior
-            Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.village);
+            Audio_System.change_bgm(*context.game.audio_system, *sounds.village);
             create_teleporter(.{14, 8}, .{12, 15.4}, TOWN_SOUTH);
             create_teleporter(.{15, 8}, .{12, 15.4}, TOWN_SOUTH);
             father := create_npc(.{21, 12}, Direction.SOUTH, *actors.old_man);
@@ -141,7 +141,7 @@ Map :: struct {
             create_teleporter(.{17, 8}, .{22, 17.4}, TOWN_SOUTH);
             create_teleporter(.{18, 8}, .{22, 17.4}, TOWN_SOUTH);
         } else if map_pos == TOWN_SOUTH { // Town South
-            Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.village);
+            Audio_System.change_bgm(*context.game.audio_system, *sounds.village);
 
             create_teleporter(.{12, 16}, .{14.5, 8.5}, HOME); 
             create_teleporter(.{4, 13}, .{17.5, 8.5}, CHIEFS_HOUSE); 
@@ -155,7 +155,7 @@ Map :: struct {
             create_npc(.{6, 18}, .SOUTH, *actors.old_woman, true);
             create_npc(.{17, 7}, .SOUTH, *actors.oldman2, true);
         } else if map_pos == TOWN_NORTH { // Town North
-            Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.village);
+            Audio_System.change_bgm(*context.game.audio_system, *sounds.village);
 
             create_bush(.{18, 14});
             create_bush(.{18, 8});
@@ -166,7 +166,7 @@ Map :: struct {
             create_npc(.{29, 2}, .SOUTH, *actors.villager2);
             
         } else if map_pos == .{1, 1} { // FOREST NORTH
-            Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.explore);
+            Audio_System.change_bgm(*context.game.audio_system, *sounds.explore);
             create_bush(.{5, 11});
             create_bush(.{5, 10});
 
@@ -186,28 +186,33 @@ Map :: struct {
                 chest.sprite.y = xx y;
             }
         } else if map_pos == FOREST_1 { 
-            Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.explore);
+            Audio_System.change_bgm(*context.game.audio_system, *sounds.explore);
             mush := create_enemy(.{10, 12}, *actors.mushroom, .FOLLOW);
+            mush.speed = 2.5;
             mush.patrol.points = .[.{10, 12}, .{20, 12}];
             mush.patrol.wait_time = 1.0;
 
             mush2 := create_enemy(.{17, 3}, *actors.mushroom, .FOLLOW);
+            mush2.speed = 2.5;
             mush2.patrol.points = .[.{17, 3}, .{6, 3}];
             mush2.patrol.wait_time = 1.0;
 
             mush3 := create_enemy(.{21, 13}, *actors.mushroom, .FOLLOW);
+            mush3.speed = 2.5;
             mush3.patrol.points = .[.{21, 13}, .{21, 3}];
             mush3.patrol.wait_time = .5;
 
             mush4 := create_enemy(.{30, 10}, *actors.mushroom, .FOLLOW);
+            mush4.speed = 2.5;
             mush4.patrol.points = .[.{30, 10}, .{35, 10}, .{36, 4}, .{30, 4}];
 
             snake := create_enemy(.{14, 18}, *actors.snake, .FOLLOW);
+            snake.speed = 2.5;
             snake.health = 8;
             snake.damage = 2;
             snake.deaggro_dist = 6;
         } else if map_pos == MINIBOSS {
-            Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.explore);
+            Audio_System.change_bgm(*context.game.audio_system, *sounds.explore);
 
             miniboss := create_enemy(.{7, 7}, *actors.samurai, .HUMANOID);
             if context.game.main_quest_state < .KEY_GOT {
@@ -225,7 +230,7 @@ Map :: struct {
 
             
         } else if map_pos == CASTLE_ENTRANCE {
-            Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.explore);
+            Audio_System.change_bgm(*context.game.audio_system, *sounds.explore);
             create_teleporter(.{33, 14}, .{19, 7.5}, DUNGEON); 
 
             if context.game.main_quest_state < .DOOR_OPEN {
@@ -260,7 +265,7 @@ Map :: struct {
                 Boss.reset_boss(boss);
             } else {
                 Dialog.open(boss_dialog_before_fight);
-                context.game.on_dialog_complete = () -> () { Audio_System.play_if_not_playing(*context.game.audio_system, 1, *sounds.boss); };
+                context.game.on_dialog_complete = () -> () { Audio_System.change_bgm(*context.game.audio_system, *sounds.boss); };
                 boss.door[0] = create_door_part(1970, .{18, 6});
                 boss.door[1] = create_door_part(1971, .{19, 6});
                 boss.door[2] = create_door_part(1972, .{20, 6});

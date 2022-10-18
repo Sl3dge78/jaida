@@ -77,6 +77,7 @@ Boss :: struct {
                     attack_time = 0;
                     if state == .WHIRLWIND {
                         weapon = create_weapon(boss, .PLAYER, 4);
+                        Audio_System.loop_alternate(*context.game.audio_system, *sounds.slash);
                     }
                     Basic.log("Boss is currently doing: %", state);
                 }   
@@ -108,6 +109,8 @@ Boss :: struct {
         if attack_time >= 4 {
             switch_to_cooldown(boss);
             weapon = null;
+            Audio_System.stop(*context.game.audio_system, 0);
+            Audio_System.stop(*context.game.audio_system, 1);
             return;
         }
 
@@ -135,6 +138,7 @@ Boss :: struct {
                     dash_state = .DASH;
                     attack_time = 0.0;
                     e.color = .{1, 1, 1, .5};
+                    Audio_System.play_fx(*context.game.audio_system, *sounds.dash);
                 }
                 anim_state = .POSE;
             }
@@ -185,6 +189,7 @@ Boss :: struct {
                     dash_target = get_dash_corner(CORNERS, current_dash + 1, starting_corner);
                     attack_time = -TIME_BETWEEN_DASHES;
                     dash_start_pos = boss.position;
+                    //Audio_System.play_fx(*context.game.audio_system, *sounds.dash);
                 }
             }
             case .DASH; {
@@ -203,6 +208,7 @@ Boss :: struct {
                             dash_target = get_dash_corner(CORNERS, current_dash, starting_corner);;
                             attack_time = -TIME_BETWEEN_DASHES;
                             dash_start_pos = boss.position;
+                            Audio_System.play_fx(*context.game.audio_system, *sounds.dash);
                         }
                     }
                 } 

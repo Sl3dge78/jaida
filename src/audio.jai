@@ -4,9 +4,6 @@ SDL_LoadWAV :: (file: *u8, spec: *SDL_AudioSpec, audio_buf: **u8, audio_len: *u3
     return SDL_LoadWAV_RW(SDL_RWFromFile(file, "rb"),1, spec,audio_buf,audio_len);
 }
 
-FX_CHANNEL :: 0;
-BGM_CHANNEL :: 1;
-
 Audio_Channel :: struct {
     stream: *Audio_Stream;
     position: u32; // Position in stream
@@ -42,7 +39,8 @@ Audio_Channel :: struct {
 
 Audio_System :: struct {
     spec : SDL_AudioSpec;
-    channels : [2]Audio_Channel;
+    channels : [4]Audio_Channel;
+    bgm_channel : Audio_Channel;
 
     init :: (self: *Audio_System) {
         requested_spec := SDL_AudioSpec.{
@@ -71,8 +69,20 @@ Audio_System :: struct {
         new_context: Context;
         push_context new_context {
             memset(stream, 0, len);
+            Audio_Channel.mix_to(*self.bgm_channel, stream, xx len);
             for *chan: channels { // Onii chan
                 Audio_Channel.mix_to(chan, stream, xx len);
+            }
+        }
+    }
+
+    play_fx :: (self: *Audio_System, stream: *Audio_Stream) {
+        for *chan : self.channels {
+            if chan.flags & .STOPPED {
+                chan.stream = stream;
+                chan.position = 0;
+                chan.flags = 0;
+                break;
             }
         }
     }
@@ -86,13 +96,23 @@ Audio_System :: struct {
         }
     }
 
-    play_if_not_playing :: (self: *Audio_System, channel: u32, stream: *Audio_Stream) {
-        if self.channels[channel].stream == stream then return;
+    change_bgm :: (self: *Audio_System, stream: *Audio_Stream) {
+        if self.bgm_channel.stream == stream then return;
 
-        self.channels[channel].stream = stream;
-        self.channels[channel].position = 0;
-        self.channels[channel].flags = 0;
-        self.channels[channel].flags |= .LOOP;
+        self.bgm_channel.stream = stream;
+        self.bgm_channel.position = 0;
+        self.bgm_channel.flags = 0;
+        self.bgm_channel.flags |= .LOOP;
+    }
+
+    loop_alternate :: (self: *Audio_System, stream: *Audio_Stream) {
+        self.channels[0].stream = stream;
+        self.channels[0].position = 0;
+        self.channels[0].flags = .LOOP;
+
+        self.channels[1].stream = stream;
+        self.channels[1].position = stream.len / 2;
+        self.channels[1].flags = .LOOP;
     }
     
     stop :: (self: *Audio_System, channel: u32) {

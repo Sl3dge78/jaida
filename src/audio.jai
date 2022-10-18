@@ -104,16 +104,6 @@ Audio_System :: struct {
         self.bgm_channel.flags = 0;
         self.bgm_channel.flags |= .LOOP;
     }
-
-    loop_alternate :: (self: *Audio_System, stream: *Audio_Stream) {
-        self.channels[0].stream = stream;
-        self.channels[0].position = 0;
-        self.channels[0].flags = .LOOP;
-
-        self.channels[1].stream = stream;
-        self.channels[1].position = stream.len / 2;
-        self.channels[1].flags = .LOOP;
-    }
     
     stop :: (self: *Audio_System, channel: u32) {
         self.channels[channel].flags |= .STOPPED;

@@ -77,7 +77,6 @@ Boss :: struct {
                     attack_time = 0;
                     if state == .WHIRLWIND {
                         weapon = create_weapon(boss, .PLAYER, 4);
-                        Audio_System.loop_alternate(*context.game.audio_system, *sounds.slash);
                     }
                     Basic.log("Boss is currently doing: %", state);
                 }   
@@ -109,11 +108,12 @@ Boss :: struct {
         if attack_time >= 4 {
             switch_to_cooldown(boss);
             weapon = null;
-            Audio_System.stop(*context.game.audio_system, 0);
-            Audio_System.stop(*context.game.audio_system, 1);
             return;
         }
 
+        if xx (attack_time * 10) % 2 == 0 {
+            Audio_System.play_fx(*context.game.audio_system, *sounds.slash);
+        }
         e.direction = cast(Direction)(attack_time * 10) % 4;
         weapon.position = position + forward(direction);
         weapon.direction = direction;

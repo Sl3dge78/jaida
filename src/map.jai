@@ -187,26 +187,31 @@ Map :: struct {
             }
         } else if map_pos == FOREST_1 { 
             Audio_System.change_bgm(*context.game.audio_system, *sounds.explore);
-            mush := create_enemy(.{10, 12}, *actors.mushroom, .FOLLOW);
+            mush := create_enemy(.{10, 12}, *actors.mushroom);
+            mush.attack_type = .NONE;
             mush.speed = 2.5;
             mush.patrol.points = .[.{10, 12}, .{20, 12}];
             mush.patrol.wait_time = 1.0;
 
-            mush2 := create_enemy(.{17, 3}, *actors.mushroom, .FOLLOW);
+            mush2 := create_enemy(.{17, 3}, *actors.mushroom);
+            mush2.attack_type = .NONE;
             mush2.speed = 2.5;
             mush2.patrol.points = .[.{17, 3}, .{6, 3}];
             mush2.patrol.wait_time = 1.0;
 
-            mush3 := create_enemy(.{21, 13}, *actors.mushroom, .FOLLOW);
+            mush3 := create_enemy(.{21, 13}, *actors.mushroom);
+            mush3.attack_type = .NONE;
             mush3.speed = 2.5;
             mush3.patrol.points = .[.{21, 13}, .{21, 3}];
             mush3.patrol.wait_time = .5;
 
-            mush4 := create_enemy(.{30, 10}, *actors.mushroom, .FOLLOW);
+            mush4 := create_enemy(.{30, 10}, *actors.mushroom);
+            mush4.attack_type = .NONE;
             mush4.speed = 2.5;
             mush4.patrol.points = .[.{30, 10}, .{35, 10}, .{36, 4}, .{30, 4}];
 
-            snake := create_enemy(.{14, 18}, *actors.snake, .FOLLOW);
+            snake := create_enemy(.{14, 18}, *actors.snake);
+            snake.attack_type = .NONE;
             snake.speed = 2.5;
             snake.health = 8;
             snake.damage = 2;
@@ -214,7 +219,7 @@ Map :: struct {
         } else if map_pos == MINIBOSS {
             Audio_System.change_bgm(*context.game.audio_system, *sounds.explore);
 
-            miniboss := create_enemy(.{7, 7}, *actors.samurai, .HUMANOID);
+            miniboss := create_enemy(.{7, 7}, *actors.samurai);
             if context.game.main_quest_state < .KEY_GOT {
                 miniboss.on_death = (e : *Entity) {
                     create_key(e.position);
@@ -222,9 +227,9 @@ Map :: struct {
                 };
             }
             enemy : *Enemy; 
-            enemy = create_enemy(.{33, 16}, *actors.red_samurai, .HUMANOID);
-            enemy = create_enemy(.{25, 13}, *actors.red_samurai, .HUMANOID);
-            enemy = create_enemy(.{3, 16}, *actors.red_samurai, .HUMANOID);
+            enemy = create_enemy(.{33, 16}, *actors.red_samurai);
+            enemy = create_enemy(.{25, 13}, *actors.red_samurai);
+            enemy = create_enemy(.{3, 16}, *actors.red_samurai);
             enemy.patrol.points = .[.{3, 16}, .{10, 16}];
             enemy.patrol.wait_time = 1.0;
 
@@ -270,10 +275,6 @@ Map :: struct {
                 boss.door[1] = create_door_part(1971, .{19, 6});
                 boss.door[2] = create_door_part(1972, .{20, 6});
             }
-        } else if map_pos == .{-1, -1} {
-            create_enemy(.{33, 16}, *actors.red_samurai, .STATIC);
-
         }
-
     }
 }

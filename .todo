@@ -10,8 +10,8 @@
 - [X] Audio
     - [X] Music playing
     - [X] Fx playing
-        - [ ] more sfx channels
-        - [ ] queue sfx (take the first non playing channel)
+        - [X] more sfx channels
+        - [X] queue sfx (take the first non playing channel)
 
 ## Content
 - [X] Death screen
@@ -65,19 +65,19 @@
 - [X] DUNGEON
 
 ## Audio 
-- [ ] Music
-    - [ ] Village
-    - [ ] Explore
-    - [ ] Boss 
-    - [ ] Death music?
-- [ ] FX
+- [X] Music
+    - [X] Village
+    - [X] Explore
+    - [X] Boss 
+    - [X] Death music?
+- [X] FX
     - [X] Attack
     - [X] Hit
     - [X] Key
-    - [ ] Boss
-        - [ ] Dash
-        - [ ] Whirlwind (same as attack?)
-    - [ ] Death
+    - [X] Boss
+        - [X] Dash
+        - [X] Whirlwind (same as attack?)
+    - [X] Death
 
 # To consider
 - [ ] Ranged human?
@@ -90,13 +90,14 @@
 - [ ] Make the characters bob up & down? Could look better
 - [ ] Save state: When we destroy the bushes, they come back. -> Meh
 - [ ] Save entities in maps, separate entity file. Need to parse it. Reflection on structs. -> Doesn't seem needed yet
-- [ ] Better audio system, using the callback. 
-    - (Dialog) queue x blipblips
+
 - [ ] Have some components that update not every frame -> Doesn't seem needed yet
 - [ ] (Collision) Allow definition of a custom collision box, for some map tiles.
 - [ ] Pathfinding ?
 
 # Done
+- [X] Better audio system, using the callback. 
+    - (Dialog) queue x blipblips
 - [X] Add shadows below entities
 - [X] (Collision) Detect them with NPCs
 - [X] Destructible element

@@ -25,7 +25,6 @@ Entity :: struct {
     direction : Direction;
     world_pos : Vector2i;
 
-
     color : Vector4 = .{1, 1, 1, 1};
 
     // Hitbox
@@ -242,9 +241,14 @@ Enemy :: struct {
     Type :: enum {
         STATIC;
         HUMANOID;
-        FOLLOW;
-    }
+    };
+
     type: Type;
+
+    attack_type : enum {
+        SWORD;
+        NONE;
+    } = .SWORD;
     patrol: Patrol_Behavior;
 
     is_aggroed: bool;
@@ -286,13 +290,9 @@ Enemy :: struct {
                 }
                 case .APPROACHING; {
                     if distance < 1 {
-                        if type == .HUMANOID {
-                            combat_phase = .WINDUP;
-                            anim_state = .WINDUP;
-                            combat_timer = WINDUP_TIME;
-                        } else {
-                            Entity.deal_damage(xx player, damage);
-                        }
+                        combat_phase = .WINDUP;
+                        anim_state = .WINDUP;
+                        combat_timer = WINDUP_TIME;
                     } else {
                         Entity.move_towards(*e, player.position, enemy.speed, delta_time);
                     }
@@ -303,7 +303,10 @@ Enemy :: struct {
                         combat_phase = .ATTACK;
                         anim_state = .ATTACKING;
                         combat_timer = ATTACK_TIME;
-                        create_weapon(e, .PLAYER, ATTACK_TIME);
+                        wep := create_weapon(e, .PLAYER, ATTACK_TIME);
+                        if attack_type == .NONE {
+                            wep.flags |= .HIDDEN;
+                        }
                         Audio_System.play_fx(*context.game.audio_system, *sounds.slash);
                     }
                 }
@@ -472,10 +475,10 @@ Dialog_NPC :: struct {
 // --------
 // Creation
 
-create_enemy :: (pos : Vector2, texture: *Simp.Texture, type: Enemy.Type) -> *Enemy {
+create_enemy :: (pos : Vector2, texture: *Simp.Texture) -> *Enemy {
     e := Game.new_entity(Enemy);
     e.sprite_sheet = texture;
-    e.type = type;
+    e.type = .HUMANOID;
     e.position = pos;
     e.flags |= .SOLID;
     return e;

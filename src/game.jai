@@ -207,6 +207,9 @@ Game :: struct {
         QUIT;   
     } = .START;
 
+    accent_color :: Vector4.{.25, .5, 1, 1};
+    white :: Vector4.{1, 1, 1, 1};
+
     load :: () {
         using context.game;
 
@@ -416,44 +419,50 @@ Game :: struct {
         if game.state == {
             case .MAIN_MENU; {
                 Simp.set_shader_for_color(true);
-                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 0.2));
-
-                Simp.draw_text(game.font, 100, 650, "GENERIC ADVENTURE GAME", make_vector4(1, 0, 0, 1));
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 0.5));
+                Simp.immediate_quad(75, 190, 500, 275, make_vector4(0, 0, 0, 0.8));
+                Simp.immediate_quad(75, 640, 500, 675, make_vector4(0, 0, 0, 0.8));
+                
+                Simp.draw_text(game.font, 100, 650, "ADVENTURE GAME", accent_color);
                 
                 Simp.draw_text(game.font, 80, ifx game.menu_current_selection == .START then 250 else 200, ">");
                 Simp.draw_text(game.font, 100, 250, "Start",
-                    ifx game.menu_current_selection == .START then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                    ifx game.menu_current_selection == .START then accent_color else white);
                 Simp.draw_text(game.font, 100, 200, "Quit", 
-                    ifx game.menu_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                    ifx game.menu_current_selection == .QUIT then accent_color else white);
             }
             case .PAUSE; {
                 Simp.set_shader_for_color(true);
-                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(1, 1, 1, 0.5));
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 0.5));
 
-                Simp.draw_text(game.font, 100, 650, "GENERIC ADVENTURE GAME", make_vector4(1, 0, 0, 1));
+                Simp.immediate_quad(75, 190, 500, 275, make_vector4(0, 0, 0, 0.8));
+                Simp.immediate_quad(75, 640, 500, 675, make_vector4(0, 0, 0, 0.8));
+
+                Simp.draw_text(game.font, 100, 650, "ADVENTURE GAME", accent_color);
                 
                 Simp.draw_text(game.font, 80, ifx game.menu_current_selection == .START then 250 else 200, ">");
                 Simp.draw_text(game.font, 100, 250, "Resume",
-                    ifx game.menu_current_selection == .START then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                    ifx game.menu_current_selection == .START then accent_color else white);
                 Simp.draw_text(game.font, 100, 200, "Quit", 
-                    ifx game.menu_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                    ifx game.menu_current_selection == .QUIT then accent_color else white);
             }
             case .DEATH; {
                 Simp.set_shader_for_color(true);
-                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 1.0 - (game.death_timer / 4.0)));
+                Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 1 - (game.death_timer / 4.0)));
             }
             case .GAME_OVER; {
                 Simp.set_shader_for_color(true);
                 Simp.immediate_quad(0, 0, 1280, 720, make_vector4(0, 0, 0, 1));
+                
 
-                Simp.draw_text(game.font, 100, 650, "YOU ARE DEAD", make_vector4(1, 0, 0, 1));
+                Simp.draw_text(game.font, 100, 650, "YOU ARE DEAD", accent_color);
 
                 Simp.draw_text(game.font, 80, ifx game.death_current_selection == .CONTINUE then 250 else 200, ">");
 
                 Simp.draw_text(game.font, 100, 250, "Retry",
-                    ifx game.death_current_selection == .CONTINUE then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                    ifx game.death_current_selection == .CONTINUE then accent_color else white);
                 Simp.draw_text(game.font, 100, 200, "Quit", 
-                    ifx game.death_current_selection == .QUIT then make_vector4(1, 0, 0, 1) else make_vector4(1, 1, 1, 1));
+                    ifx game.death_current_selection == .QUIT then accent_color else white);
             }
         }
 
@@ -583,8 +592,6 @@ Game :: struct {
         }
         game.state = to;
     }
-
-    
 
     /// Computes a new velocity that avoids map obstacles
     move_and_slide :: (entity: *Entity, velocity : Vector2, map : Map) -> Vector2 {

@@ -3,19 +3,19 @@
 A simple and short adventure game made in Jai. 
 
 ## Controls
-WASD  : Move
-E     : Interact
-SPACE : Attack
+WASD  : Move  
+E     : Interact  
+SPACE : Attack  
 
 ## Build
-Just run `jai src/build.jai`.
-You can comment out the optimization level line for a debug build.
-For dev tools change `Compiler.add_build_string("DEVELOPER :: false;", w);` to `Compiler.add_build_string("DEVELOPER :: true;", w);`
+Just run `jai src/build.jai`.  
+You can comment out the optimization level line for a debug build.  
+For dev tools change `Compiler.add_build_string("DEVELOPER :: false;", w);` to `Compiler.add_build_string("DEVELOPER :: true;", w);`  
 
 ## Assets
-- All graphical (sprites & fonts) are from [pixel-boy](https://pixel-boy.itch.io/ninja-adventure-asset-pack) (cc0)
-- Music is by me with the OP-Z
-- SFX is made with [sfxr](https://www.drpetter.se/project_sfxr.html)
+- All graphical (sprites & fonts) are from [pixel-boy](https://pixel-boy.itch.io/ninja-adventure-asset-pack) (cc0)  
+- Music is by me with the OP-Z  
+- SFX is made with [sfxr](https://www.drpetter.se/project_sfxr.html)  
 
 ## Notes
 - Most of the game uses the Modules given with the compiler. The only thing that works without is the audio that just uses SDL.
